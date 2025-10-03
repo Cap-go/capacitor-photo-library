@@ -6,7 +6,7 @@
   <h2><a href="https://capgo.app/consulting/?ref=plugin"> Missing a feature? We’ll build the plugin for you 💪</a></h2>
 </div>
 
-Displays photo gallery as web page, and not as boring native screen which you cannot modify
+Displays photo gallery as web page, or boring native screen which you cannot modify but require no authorization
 
 ## Install
 
@@ -42,6 +42,13 @@ if (state === 'authorized' || state === 'limited') {
 
   console.log('Loaded', gallery.length, 'items. More available?', hasMore);
 }
+
+const picked = await PhotoLibrary.pickMedia({
+  selectionLimit: 3,
+  includeVideos: true,
+});
+
+console.log('User selected', picked.assets.length, 'items');
 ```
 
 The native implementations cache exported files inside the application cache
@@ -58,6 +65,7 @@ you need to free up space.
 * [`getLibrary(...)`](#getlibrary)
 * [`getPhotoUrl(...)`](#getphotourl)
 * [`getThumbnailUrl(...)`](#getthumbnailurl)
+* [`pickMedia(...)`](#pickmedia)
 * [Interfaces](#interfaces)
 * [Type Aliases](#type-aliases)
 
@@ -158,6 +166,24 @@ Retrieves a displayable URL for a resized thumbnail of the asset.
 --------------------
 
 
+### pickMedia(...)
+
+```typescript
+pickMedia(options?: PickMediaOptions | undefined) => Promise<PickMediaResult>
+```
+
+Opens the native system picker so the user can select media without granting full photo library access.
+The selected files are copied into the application cache and returned with portable URLs.
+
+| Param         | Type                                                          |
+| ------------- | ------------------------------------------------------------- |
+| **`options`** | <code><a href="#pickmediaoptions">PickMediaOptions</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#pickmediaresult">PickMediaResult</a>&gt;</code>
+
+--------------------
+
+
 ### Interfaces
 
 
@@ -225,6 +251,25 @@ Retrieves a displayable URL for a resized thumbnail of the asset.
 | **`thumbnailHeight`**           | <code>number</code>  | Height of the generated thumbnails. Defaults to `384`.                                                |
 | **`thumbnailQuality`**          | <code>number</code>  | JPEG quality for generated thumbnails (0-1). Defaults to `0.5`.                                       |
 | **`includeFullResolutionData`** | <code>boolean</code> | When `true`, copies the full sized asset into the app cache and returns its URL. Defaults to `false`. |
+
+
+#### PickMediaResult
+
+| Prop         | Type                             |
+| ------------ | -------------------------------- |
+| **`assets`** | <code>PhotoLibraryAsset[]</code> |
+
+
+#### PickMediaOptions
+
+| Prop                   | Type                 | Description                                                                                         |
+| ---------------------- | -------------------- | --------------------------------------------------------------------------------------------------- |
+| **`selectionLimit`**   | <code>number</code>  | Maximum number of items the user can select. Use `0` to allow unlimited selection. Defaults to `1`. |
+| **`includeImages`**    | <code>boolean</code> | Allow the user to select images. Defaults to `true`.                                                |
+| **`includeVideos`**    | <code>boolean</code> | Allow the user to select videos. Defaults to `false`.                                               |
+| **`thumbnailWidth`**   | <code>number</code>  | Width of the generated thumbnails for picked items. Defaults to `256`.                              |
+| **`thumbnailHeight`**  | <code>number</code>  | Height of the generated thumbnails for picked items. Defaults to `256`.                             |
+| **`thumbnailQuality`** | <code>number</code>  | JPEG quality for generated thumbnails (0-1). Defaults to `0.7`.                                     |
 
 
 ### Type Aliases

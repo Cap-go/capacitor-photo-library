@@ -5,9 +5,13 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.MediaMetadataRetriever;
+import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.util.Size;
 import androidx.annotation.Nullable;
 import com.getcapacitor.Bridge;
@@ -30,6 +34,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 final class PhotoLibraryService {
 
@@ -43,6 +49,7 @@ final class PhotoLibraryService {
     private final File thumbnailDirectory;
     private final File fileDirectory;
     private final DateTimeFormatter isoFormatter;
+    private final Map<String, PickedItem> pickedItems = new ConcurrentHashMap<>();
 
     PhotoLibraryService(Context context, Bridge bridge) {
         this.context = context.getApplicationContext();
@@ -132,8 +139,154 @@ final class PhotoLibraryService {
         return new PhotoLibraryFetchResult(assetsArray, totalCount, hasMore);
     }
 
+    JSArray createAssetsFromUris(List<Uri> uris, PickMediaOptions options) throws IOException {
+        JSArray array = new JSArray();
+        for (Uri uri : uris) {
+            JSObject asset = createAssetFromUri(uri, options);
+            if (asset != null) {
+                try {
+                    array.put(asset);
+                } catch (Exception e) {
+                    Logger.error("PhotoLibrary", "Failed to add picked asset", e);
+                }
+            }
+        }
+        return array;
+    }
+
+    @Nullable
+    private JSObject createAssetFromUri(Uri uri, PickMediaOptions options) throws IOException {
+        InputStream stream = resolver.openInputStream(uri);
+        if (stream == null) {
+            return null;
+        }
+
+        String mimeType = resolver.getType(uri);
+        String type = (mimeType != null && mimeType.startsWith("video")) ? "video" : "image";
+        String identifier = "picked:" + UUID.randomUUID();
+
+        String displayName = null;
+        long reportedSize = -1;
+        try (Cursor cursor = resolver.query(uri, new String[] { OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE }, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (nameIndex != -1) {
+                    displayName = cursor.getString(nameIndex);
+                }
+                int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+                if (sizeIndex != -1) {
+                    reportedSize = cursor.getLong(sizeIndex);
+                }
+            }
+        }
+
+        String extension = guessExtension(mimeType);
+        File file = new File(fileDirectory, hashed(identifier) + extension);
+        try (InputStream in = stream; FileOutputStream out = new FileOutputStream(file)) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+        }
+
+        long size = file.length();
+        if (size <= 0 && reportedSize > 0) {
+            size = reportedSize;
+        }
+
+        int width = 0;
+        int height = 0;
+        Double durationSeconds = null;
+
+        if ("image".equals(type)) {
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(file.getAbsolutePath(), opts);
+            width = opts.outWidth;
+            height = opts.outHeight;
+        } else if ("video".equals(type)) {
+            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+            try {
+                retriever.setDataSource(file.getAbsolutePath());
+                String widthVal = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
+                String heightVal = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
+                String rotationVal = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+                String durationVal = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+
+                if (widthVal != null) {
+                    width = Integer.parseInt(widthVal);
+                }
+                if (heightVal != null) {
+                    height = Integer.parseInt(heightVal);
+                }
+                if (rotationVal != null) {
+                    int rotation = Integer.parseInt(rotationVal);
+                    if (rotation == 90 || rotation == 270) {
+                        int tmp = width;
+                        width = height;
+                        height = tmp;
+                    }
+                }
+                if (durationVal != null) {
+                    long durationMs = Long.parseLong(durationVal);
+                    durationSeconds = durationMs / 1000.0;
+                }
+            } catch (Exception ignored) {} finally {
+                retriever.release();
+            }
+        }
+
+        String resolvedMime = mimeType != null ? mimeType : ("image".equals(type) ? "image/jpeg" : "application/octet-stream");
+        PickedItem picked = new PickedItem(file, resolvedMime, type);
+        pickedItems.put(identifier, picked);
+
+        JSObject asset = new JSObject();
+        try {
+            asset.put("id", identifier);
+            asset.put("fileName", displayName != null ? displayName : identifier + extension);
+            asset.put("type", type);
+            asset.put("width", width);
+            asset.put("height", height);
+            if (durationSeconds != null) {
+                asset.put("duration", durationSeconds);
+            }
+            asset.put("mimeType", resolvedMime);
+            asset.put("size", size);
+
+            JSObject fileObject = createFileObject(file, resolvedMime);
+            asset.put("file", fileObject);
+
+            JSObject thumbnail = ensurePickedThumbnail(
+                identifier,
+                picked,
+                options.thumbnailWidth,
+                options.thumbnailHeight,
+                options.thumbnailQuality
+            );
+            if (thumbnail != null) {
+                asset.put("thumbnail", thumbnail);
+            }
+        } catch (Exception e) {
+            Logger.error("PhotoLibrary", "Failed to build picked asset", e);
+            pickedItems.remove(identifier);
+            if (file.exists()) {
+                //noinspection ResultOfMethodCallIgnored
+                file.delete();
+            }
+            return null;
+        }
+
+        return asset;
+    }
+
     @Nullable
     JSObject getFullResolutionFile(String assetId) throws IOException {
+        PickedItem picked = pickedItems.get(assetId);
+        if (picked != null) {
+            return createFileObject(picked.file, picked.mimeType);
+        }
+
         MediaAsset asset = findAsset(assetId);
         if (asset == null) {
             return null;
@@ -154,6 +307,11 @@ final class PhotoLibraryService {
 
     @Nullable
     JSObject getThumbnailFile(String assetId, int width, int height, double quality) throws IOException {
+        PickedItem picked = pickedItems.get(assetId);
+        if (picked != null) {
+            return ensurePickedThumbnail(assetId, picked, width, height, quality);
+        }
+
         MediaAsset asset = findAsset(assetId);
         if (asset == null) {
             return null;
@@ -489,6 +647,75 @@ final class PhotoLibraryService {
         return cursor.getInt(index);
     }
 
+    private JSObject createFileObject(File file, String mimeType) {
+        JSObject result = new JSObject();
+        try {
+            result.put("path", file.getAbsolutePath());
+            result.put("webPath", portablePath(file));
+            result.put("mimeType", mimeType != null ? mimeType : "application/octet-stream");
+            result.put("size", file.length());
+        } catch (Exception e) {
+            Logger.error("PhotoLibrary", "Failed to serialize file", e);
+        }
+        return result;
+    }
+
+    private JSObject ensurePickedThumbnail(String identifier, PickedItem picked, int width, int height, double quality) throws IOException {
+        if (width <= 0 || height <= 0) {
+            return null;
+        }
+
+        File target = new File(
+            thumbnailDirectory,
+            String.format(Locale.US, "%s_%dx%d_q%.0f.jpg", hashed(identifier), width, height, quality * 100)
+        );
+
+        if (!target.exists()) {
+            if ("image".equals(picked.type)) {
+                Bitmap bitmap = BitmapFactory.decodeFile(picked.file.getAbsolutePath());
+                if (bitmap == null) {
+                    return null;
+                }
+                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, width, height, true);
+                if (scaled != bitmap) {
+                    bitmap.recycle();
+                }
+                try (FileOutputStream out = new FileOutputStream(target)) {
+                    scaled.compress(Bitmap.CompressFormat.JPEG, (int) Math.round(Math.max(0, Math.min(1, quality)) * 100), out);
+                }
+                scaled.recycle();
+            } else if ("video".equals(picked.type)) {
+                Bitmap bitmap;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    bitmap = ThumbnailUtils.createVideoThumbnail(picked.file, new Size(width, height), null);
+                } else {
+                    bitmap = ThumbnailUtils.createVideoThumbnail(picked.file.getAbsolutePath(), MediaStore.Video.Thumbnails.MINI_KIND);
+                    if (bitmap != null && (bitmap.getWidth() != width || bitmap.getHeight() != height)) {
+                        Bitmap rescaled = Bitmap.createScaledBitmap(bitmap, width, height, true);
+                        if (rescaled != bitmap) {
+                            bitmap.recycle();
+                        }
+                        bitmap = rescaled;
+                    }
+                }
+
+                if (bitmap == null) {
+                    return null;
+                }
+
+                try (FileOutputStream out = new FileOutputStream(target)) {
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, (int) Math.round(Math.max(0, Math.min(1, quality)) * 100), out);
+                } finally {
+                    bitmap.recycle();
+                }
+            } else {
+                return null;
+            }
+        }
+
+        return createFileObject(target, "image/jpeg");
+    }
+
     private String portablePath(File file) {
         String host = bridge.getLocalUrl();
         if (host == null || host.isEmpty()) {
@@ -528,6 +755,19 @@ final class PhotoLibraryService {
         }
         String subtype = mimeType.substring(mimeType.indexOf('/') + 1);
         return "." + subtype;
+    }
+
+    private static final class PickedItem {
+
+        final File file;
+        final String mimeType;
+        final String type;
+
+        PickedItem(File file, String mimeType, String type) {
+            this.file = file;
+            this.mimeType = mimeType;
+            this.type = type;
+        }
     }
 
     private static final class AlbumAccumulator {

@@ -3,8 +3,11 @@ import CryptoKit
 import Foundation
 import MobileCoreServices
 import Photos
+import PhotosUI
 import UniformTypeIdentifiers
 import UIKit
+import AVFoundation
+import ImageIO
 
 enum PhotoLibraryError: Error {
     case permissionDenied
@@ -182,6 +185,41 @@ struct PhotoLibraryGetLibraryOptions {
     }
 }
 
+struct PhotoLibraryPickOptions {
+    let selectionLimit: Int
+    let includeImages: Bool
+    let includeVideos: Bool
+    let thumbnailWidth: Int
+    let thumbnailHeight: Int
+    let thumbnailQuality: Double
+
+    init(from call: CAPPluginCall) throws {
+        let selectionLimit = call.getInt("selectionLimit") ?? 1
+        if selectionLimit < 0 {
+            throw PhotoLibraryError.invalidOptions("selectionLimit must be greater than or equal to 0")
+        }
+        self.selectionLimit = selectionLimit
+
+        var includeImages = call.getBool("includeImages") ?? true
+        var includeVideos = call.getBool("includeVideos") ?? false
+
+        if !includeImages && !includeVideos {
+            includeImages = true
+        }
+
+        self.includeImages = includeImages
+        self.includeVideos = includeVideos
+
+        let width = call.getInt("thumbnailWidth") ?? 256
+        let height = call.getInt("thumbnailHeight") ?? 256
+        self.thumbnailWidth = max(0, width)
+        self.thumbnailHeight = max(0, height)
+
+        let quality = call.getDouble("thumbnailQuality") ?? 0.7
+        self.thumbnailQuality = max(0.0, min(1.0, quality))
+    }
+}
+
 final class PhotoLibraryService {
     typealias WebPathResolver = (URL) -> String?
 
@@ -212,7 +250,14 @@ final class PhotoLibraryService {
         "heif": "image/heif"
     ]
 
+    private struct PickedItem {
+        let fileURL: URL
+        let mimeType: String
+        let type: String
+    }
+
     var webPathResolver: WebPathResolver?
+    private var pickedItems: [String: PickedItem] = [:]
 
     init(webPathResolver: WebPathResolver? = nil) {
         self.webPathResolver = webPathResolver
@@ -336,8 +381,50 @@ final class PhotoLibraryService {
         }
     }
 
+    @available(iOS 14, *)
+    func processPickerResults(_ results: [PHPickerResult], options: PhotoLibraryPickOptions, completion: @escaping ([PhotoLibraryAssetResult]) -> Void) {
+        queue.async {
+            guard !results.isEmpty else {
+                DispatchQueue.main.async {
+                    completion([])
+                }
+                return
+            }
+
+            let group = DispatchGroup()
+            var assets: [PhotoLibraryAssetResult] = []
+            let lock = NSLock()
+
+            for result in results {
+                group.enter()
+                self.assetFromPickerResult(result, options: options) { asset in
+                    if let asset = asset {
+                        lock.lock()
+                        assets.append(asset)
+                        lock.unlock()
+                    }
+                    group.leave()
+                }
+            }
+
+            group.notify(queue: self.queue) {
+                DispatchQueue.main.async {
+                    completion(assets)
+                }
+            }
+        }
+    }
+
     func fetchFullResolutionFile(for assetId: String, allowNetworkAccess: Bool, completion: @escaping (PhotoLibraryFileResult?) -> Void) {
         queue.async {
+            if let picked = self.pickedItems[assetId] {
+                let fileResult = PhotoLibraryFileResult(url: picked.fileURL, mimeType: picked.mimeType, size: self.fileSize(at: picked.fileURL))
+                DispatchQueue.main.async {
+                    completion(fileResult)
+                }
+                return
+            }
+
             guard let asset = self.fetchAsset(with: assetId) else {
                 DispatchQueue.main.async {
                     completion(nil)
@@ -353,6 +440,14 @@ final class PhotoLibraryService {
 
     func fetchThumbnailFile(for assetId: String, width: Int, height: Int, quality: Double, allowNetworkAccess: Bool, completion: @escaping (PhotoLibraryFileResult?) -> Void) {
         queue.async {
+            if let picked = self.pickedItems[assetId] {
+                let file = self.thumbnailForPickedItem(identifier: assetId, item: picked, width: width, height: height, quality: quality)
+                DispatchQueue.main.async {
+                    completion(file)
+                }
+                return
+            }
+
             guard let asset = self.fetchAsset(with: assetId) else {
                 DispatchQueue.main.async {
                     completion(nil)
@@ -453,6 +548,211 @@ final class PhotoLibraryService {
             thumbnail: thumbnail,
             file: file
         )
+    }
+
+    @available(iOS 14, *)
+    private func assetFromPickerResult(_ result: PHPickerResult, options: PhotoLibraryPickOptions, completion: @escaping (PhotoLibraryAssetResult?) -> Void) {
+        let provider = result.itemProvider
+        let identifier = result.assetIdentifier ?? "picked-\(UUID().uuidString)"
+
+        if options.includeImages && provider.canLoadObject(ofClass: UIImage.self) {
+            provider.loadObject(ofClass: UIImage.self) { object, _ in
+                guard let image = object as? UIImage else {
+                    completion(nil)
+                    return
+                }
+                self.queue.async {
+                    let asset = self.createAssetFromPickedImage(image: image, identifier: identifier, suggestedName: provider.suggestedName, options: options)
+                    completion(asset)
+                }
+            }
+            return
+        }
+
+        if options.includeVideos && provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
+            provider.loadFileRepresentation(forTypeIdentifier: UTType.movie.identifier) { url, _ in
+                guard let url = url else {
+                    completion(nil)
+                    return
+                }
+                self.queue.async {
+                    let asset = self.createAssetFromPickedVideo(tempURL: url, identifier: identifier, suggestedName: provider.suggestedName, options: options)
+                    completion(asset)
+                }
+            }
+            return
+        }
+
+        completion(nil)
+    }
+
+    @available(iOS 14, *)
+    private func createAssetFromPickedImage(image: UIImage, identifier: String, suggestedName: String?, options: PhotoLibraryPickOptions) -> PhotoLibraryAssetResult? {
+        let baseName = (suggestedName?.isEmpty ?? true) ? "\(identifier).jpg" : suggestedName!
+        let ext = (baseName as NSString).pathExtension.isEmpty ? "jpg" : (baseName as NSString).pathExtension
+        let hashed = hashedIdentifier(identifier)
+        let fileURL = fileDirectory.appendingPathComponent("\(hashed).\(ext)")
+
+        guard let data = image.jpegData(compressionQuality: 1.0) else {
+            return nil
+        }
+
+        do {
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            CAPLog.print("PhotoLibrary: failed to persist picked image: \(error.localizedDescription)")
+            return nil
+        }
+
+        let mimeType = mimeType(for: nil, fallbackName: fileURL.lastPathComponent)
+        let fileResult = PhotoLibraryFileResult(url: fileURL, mimeType: mimeType, size: fileSize(at: fileURL))
+
+        var thumbnail: PhotoLibraryFileResult?
+        if options.thumbnailWidth > 0 && options.thumbnailHeight > 0 {
+            thumbnail = createThumbnail(from: image, identifier: identifier, width: options.thumbnailWidth, height: options.thumbnailHeight, quality: options.thumbnailQuality)
+        }
+
+        pickedItems[identifier] = PickedItem(fileURL: fileURL, mimeType: mimeType, type: "image")
+
+        let pixelWidth = Int(image.size.width * image.scale)
+        let pixelHeight = Int(image.size.height * image.scale)
+
+        return PhotoLibraryAssetResult(
+            id: identifier,
+            fileName: baseName,
+            type: "image",
+            width: pixelWidth,
+            height: pixelHeight,
+            duration: nil,
+            creationDate: nil,
+            modificationDate: nil,
+            latitude: nil,
+            longitude: nil,
+            mimeType: mimeType,
+            albumIds: nil,
+            thumbnail: thumbnail,
+            file: fileResult
+        )
+    }
+
+    @available(iOS 14, *)
+    private func createAssetFromPickedVideo(tempURL: URL, identifier: String, suggestedName: String?, options: PhotoLibraryPickOptions) -> PhotoLibraryAssetResult? {
+        let baseName = (suggestedName?.isEmpty ?? true) ? tempURL.lastPathComponent : suggestedName!
+        let ext = (baseName as NSString).pathExtension.isEmpty ? "mov" : (baseName as NSString).pathExtension
+        let hashed = hashedIdentifier(identifier)
+        let fileURL = fileDirectory.appendingPathComponent("\(hashed).\(ext)")
+
+        do {
+            if fileManager.fileExists(atPath: fileURL.path) {
+                try fileManager.removeItem(at: fileURL)
+            }
+            try fileManager.copyItem(at: tempURL, to: fileURL)
+        } catch {
+            CAPLog.print("PhotoLibrary: failed to persist picked video: \(error.localizedDescription)")
+            return nil
+        }
+
+        let asset = AVAsset(url: fileURL)
+        let durationSeconds = CMTimeGetSeconds(asset.duration)
+        var width = 0
+        var height = 0
+        if let track = asset.tracks(withMediaType: .video).first {
+            let size = track.naturalSize.applying(track.preferredTransform)
+            width = Int(abs(size.width))
+            height = Int(abs(size.height))
+        }
+
+        let mimeType = mimeType(for: nil, fallbackName: fileURL.lastPathComponent)
+        let fileResult = PhotoLibraryFileResult(url: fileURL, mimeType: mimeType, size: fileSize(at: fileURL))
+
+        var thumbnail: PhotoLibraryFileResult?
+        if options.thumbnailWidth > 0 && options.thumbnailHeight > 0 {
+            thumbnail = createThumbnail(from: asset, identifier: identifier, width: options.thumbnailWidth, height: options.thumbnailHeight, quality: options.thumbnailQuality)
+        }
+
+        pickedItems[identifier] = PickedItem(fileURL: fileURL, mimeType: mimeType, type: "video")
+
+        return PhotoLibraryAssetResult(
+            id: identifier,
+            fileName: baseName,
+            type: "video",
+            width: width,
+            height: height,
+            duration: durationSeconds.isFinite ? durationSeconds : nil,
+            creationDate: nil,
+            modificationDate: nil,
+            latitude: nil,
+            longitude: nil,
+            mimeType: mimeType,
+            albumIds: nil,
+            thumbnail: thumbnail,
+            file: fileResult
+        )
+    }
+
+    private func thumbnailURL(for identifier: String, width: Int, height: Int, quality: Double) -> URL {
+        let fileName = String(format: "%@_%dx%d_q%.0f.jpg", hashedIdentifier(identifier), width, height, quality * 100)
+        return thumbnailDirectory.appendingPathComponent(fileName)
+    }
+
+    private func createThumbnail(from image: UIImage, identifier: String, width: Int, height: Int, quality: Double) -> PhotoLibraryFileResult? {
+        let targetSize = CGSize(width: width, height: height)
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        let scaledImage = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+
+        guard let data = scaledImage.jpegData(compressionQuality: CGFloat(quality)) else {
+            return nil
+        }
+
+        let url = thumbnailURL(for: identifier, width: width, height: height, quality: quality)
+
+        do {
+            try data.write(to: url, options: .atomic)
+        } catch {
+            CAPLog.print("PhotoLibrary: failed to write picked thumbnail: \(error.localizedDescription)")
+            return nil
+        }
+
+        return PhotoLibraryFileResult(url: url, mimeType: "image/jpeg", size: fileSize(at: url))
+    }
+
+    private func createThumbnail(from asset: AVAsset, identifier: String, width: Int, height: Int, quality: Double) -> PhotoLibraryFileResult? {
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = CGSize(width: width, height: height)
+
+        guard let cgImage = try? generator.copyCGImage(at: .zero, actualTime: nil) else {
+            return nil
+        }
+
+        let image = UIImage(cgImage: cgImage)
+        return createThumbnail(from: image, identifier: identifier, width: width, height: height, quality: quality)
+    }
+
+    private func thumbnailForPickedItem(identifier: String, item: PickedItem, width: Int, height: Int, quality: Double) -> PhotoLibraryFileResult? {
+        guard width > 0, height > 0 else {
+            return nil
+        }
+
+        let url = thumbnailURL(for: identifier, width: width, height: height, quality: quality)
+        if fileManager.fileExists(atPath: url.path) {
+            return PhotoLibraryFileResult(url: url, mimeType: "image/jpeg", size: fileSize(at: url))
+        }
+
+        switch item.type {
+        case "image":
+            guard let image = UIImage(contentsOfFile: item.fileURL.path) else {
+                return nil
+            }
+            return createThumbnail(from: image, identifier: identifier, width: width, height: height, quality: quality)
+        case "video":
+            let asset = AVAsset(url: item.fileURL)
+            return createThumbnail(from: asset, identifier: identifier, width: width, height: height, quality: quality)
+        default:
+            return nil
+        }
     }
 
     private func fetchAsset(with id: String) -> PHAsset? {

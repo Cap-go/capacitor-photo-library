@@ -6,6 +6,8 @@ import type {
   PhotoLibraryAlbum,
   PhotoLibraryAuthorizationState,
   PhotoLibraryFile,
+  PickMediaOptions,
+  PickMediaResult,
   PhotoLibraryPlugin,
 } from './definitions';
 
@@ -37,5 +39,9 @@ export class PhotoLibraryWeb extends WebPlugin implements PhotoLibraryPlugin {
     quality?: number | undefined;
   }): Promise<PhotoLibraryFile> {
     throw this.unimplemented('getThumbnailUrl');
+  }
+
+  async pickMedia(_options?: PickMediaOptions): Promise<PickMediaResult> {
+    throw this.unimplemented('pickMedia');
   }
 }

@@ -102,6 +102,28 @@ export interface PhotoLibraryAlbum {
   assetCount: number;
 }
 
+export interface PickMediaOptions {
+  /**
+   * Maximum number of items the user can select. Use `0` to allow unlimited selection.
+   * Defaults to `1`.
+   */
+  selectionLimit?: number;
+  /** Allow the user to select images. Defaults to `true`. */
+  includeImages?: boolean;
+  /** Allow the user to select videos. Defaults to `false`. */
+  includeVideos?: boolean;
+  /** Width of the generated thumbnails for picked items. Defaults to `256`. */
+  thumbnailWidth?: number;
+  /** Height of the generated thumbnails for picked items. Defaults to `256`. */
+  thumbnailHeight?: number;
+  /** JPEG quality for generated thumbnails (0-1). Defaults to `0.7`. */
+  thumbnailQuality?: number;
+}
+
+export interface PickMediaResult {
+  assets: PhotoLibraryAsset[];
+}
+
 export interface PhotoLibraryPlugin {
   /** Returns the current authorization status without prompting the user. */
   checkAuthorization(): Promise<{ state: PhotoLibraryAuthorizationState }>;
@@ -124,4 +146,9 @@ export interface PhotoLibraryPlugin {
     height?: number;
     quality?: number;
   }): Promise<PhotoLibraryFile>;
+  /**
+   * Opens the native system picker so the user can select media without granting full photo library access.
+   * The selected files are copied into the application cache and returned with portable URLs.
+   */
+  pickMedia(options?: PickMediaOptions): Promise<PickMediaResult>;
 }
