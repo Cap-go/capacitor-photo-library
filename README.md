@@ -9,29 +9,228 @@ npm install @capgo/capacitor-photo-library
 npx cap sync
 ```
 
+## Usage
+
+```ts
+import { Capacitor } from '@capacitor/core';
+import { PhotoLibrary } from '@capgo/capacitor-photo-library';
+
+const { state } = await PhotoLibrary.requestAuthorization();
+if (state === 'authorized' || state === 'limited') {
+  const { assets, hasMore } = await PhotoLibrary.getLibrary({
+    limit: 100,
+    thumbnailWidth: 256,
+    thumbnailHeight: 256,
+  });
+
+  const gallery = assets.map(asset => ({
+    id: asset.id,
+    fileName: asset.fileName,
+    thumbnailUrl: asset.thumbnail
+      ? asset.thumbnail.webPath ?? Capacitor.convertFileSrc(asset.thumbnail.path)
+      : undefined,
+    photoUrl: asset.file
+      ? asset.file.webPath ?? Capacitor.convertFileSrc(asset.file.path)
+      : undefined,
+  }));
+
+  console.log('Loaded', gallery.length, 'items. More available?', hasMore);
+}
+```
+
+The native implementations cache exported files inside the application cache
+directory. You can safely delete the `photoLibrary` folder under the cache if
+you need to free up space.
+
 ## API
 
 <docgen-index>
 
-* [`echo(...)`](#echo)
+* [`checkAuthorization()`](#checkauthorization)
+* [`requestAuthorization()`](#requestauthorization)
+* [`getAlbums()`](#getalbums)
+* [`getLibrary(...)`](#getlibrary)
+* [`getPhotoUrl(...)`](#getphotourl)
+* [`getThumbnailUrl(...)`](#getthumbnailurl)
+* [Interfaces](#interfaces)
+* [Type Aliases](#type-aliases)
 
 </docgen-index>
 
 <docgen-api>
 <!--Update the source file JSDoc comments and rerun docgen to update the docs below-->
 
-### echo(...)
+### checkAuthorization()
 
 ```typescript
-echo(options: { value: string; }) => Promise<{ value: string; }>
+checkAuthorization() => Promise<{ state: PhotoLibraryAuthorizationState; }>
 ```
 
-| Param         | Type                            |
-| ------------- | ------------------------------- |
-| **`options`** | <code>{ value: string; }</code> |
+Returns the current authorization status without prompting the user.
 
-**Returns:** <code>Promise&lt;{ value: string; }&gt;</code>
+**Returns:** <code>Promise&lt;{ state: <a href="#photolibraryauthorizationstate">PhotoLibraryAuthorizationState</a>; }&gt;</code>
 
 --------------------
+
+
+### requestAuthorization()
+
+```typescript
+requestAuthorization() => Promise<{ state: PhotoLibraryAuthorizationState; }>
+```
+
+Requests access to the photo library if needed.
+
+**Returns:** <code>Promise&lt;{ state: <a href="#photolibraryauthorizationstate">PhotoLibraryAuthorizationState</a>; }&gt;</code>
+
+--------------------
+
+
+### getAlbums()
+
+```typescript
+getAlbums() => Promise<{ albums: PhotoLibraryAlbum[]; }>
+```
+
+Retrieves the available albums.
+
+**Returns:** <code>Promise&lt;{ albums: PhotoLibraryAlbum[]; }&gt;</code>
+
+--------------------
+
+
+### getLibrary(...)
+
+```typescript
+getLibrary(options?: GetLibraryOptions | undefined) => Promise<GetLibraryResult>
+```
+
+Retrieves library assets along with URLs that can be displayed in the web view.
+
+| Param         | Type                                                            |
+| ------------- | --------------------------------------------------------------- |
+| **`options`** | <code><a href="#getlibraryoptions">GetLibraryOptions</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#getlibraryresult">GetLibraryResult</a>&gt;</code>
+
+--------------------
+
+
+### getPhotoUrl(...)
+
+```typescript
+getPhotoUrl(options: { id: string; }) => Promise<PhotoLibraryFile>
+```
+
+Retrieves a displayable URL for the full resolution version of the asset.
+If you already called `getLibrary` with `includeFullResolutionData`, you normally
+do not need this method.
+
+| Param         | Type                         |
+| ------------- | ---------------------------- |
+| **`options`** | <code>{ id: string; }</code> |
+
+**Returns:** <code>Promise&lt;<a href="#photolibraryfile">PhotoLibraryFile</a>&gt;</code>
+
+--------------------
+
+
+### getThumbnailUrl(...)
+
+```typescript
+getThumbnailUrl(options: { id: string; width?: number; height?: number; quality?: number; }) => Promise<PhotoLibraryFile>
+```
+
+Retrieves a displayable URL for a resized thumbnail of the asset.
+
+| Param         | Type                                                                            |
+| ------------- | ------------------------------------------------------------------------------- |
+| **`options`** | <code>{ id: string; width?: number; height?: number; quality?: number; }</code> |
+
+**Returns:** <code>Promise&lt;<a href="#photolibraryfile">PhotoLibraryFile</a>&gt;</code>
+
+--------------------
+
+
+### Interfaces
+
+
+#### PhotoLibraryAlbum
+
+| Prop             | Type                |
+| ---------------- | ------------------- |
+| **`id`**         | <code>string</code> |
+| **`title`**      | <code>string</code> |
+| **`assetCount`** | <code>number</code> |
+
+
+#### GetLibraryResult
+
+| Prop             | Type                             | Description                                                                                                                    |
+| ---------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **`assets`**     | <code>PhotoLibraryAsset[]</code> |                                                                                                                                |
+| **`totalCount`** | <code>number</code>              | Total number of assets matching the query in the library. `assets.length` can be less than this value when pagination is used. |
+| **`hasMore`**    | <code>boolean</code>             | Whether more assets are available when using pagination.                                                                       |
+
+
+#### PhotoLibraryAsset
+
+| Prop                   | Type                                                          | Description                                                              |
+| ---------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **`id`**               | <code>string</code>                                           |                                                                          |
+| **`fileName`**         | <code>string</code>                                           |                                                                          |
+| **`type`**             | <code><a href="#photoassettype">PhotoAssetType</a></code>     |                                                                          |
+| **`width`**            | <code>number</code>                                           |                                                                          |
+| **`height`**           | <code>number</code>                                           |                                                                          |
+| **`duration`**         | <code>number</code>                                           |                                                                          |
+| **`creationDate`**     | <code>string</code>                                           |                                                                          |
+| **`modificationDate`** | <code>string</code>                                           |                                                                          |
+| **`latitude`**         | <code>number</code>                                           |                                                                          |
+| **`longitude`**        | <code>number</code>                                           |                                                                          |
+| **`mimeType`**         | <code>string</code>                                           |                                                                          |
+| **`size`**             | <code>number</code>                                           | Size in bytes reported by the OS for the underlying asset, if available. |
+| **`albumIds`**         | <code>string[]</code>                                         |                                                                          |
+| **`thumbnail`**        | <code><a href="#photolibraryfile">PhotoLibraryFile</a></code> |                                                                          |
+| **`file`**             | <code><a href="#photolibraryfile">PhotoLibraryFile</a></code> |                                                                          |
+
+
+#### PhotoLibraryFile
+
+| Prop           | Type                | Description                                                                                   |
+| -------------- | ------------------- | --------------------------------------------------------------------------------------------- |
+| **`path`**     | <code>string</code> | Absolute path on the native file system.                                                      |
+| **`webPath`**  | <code>string</code> | URL that can be used inside a web view. Usually produced by `Capacitor.convertFileSrc(path)`. |
+| **`mimeType`** | <code>string</code> |                                                                                               |
+| **`size`**     | <code>number</code> | Size in bytes if known, otherwise `-1`.                                                       |
+
+
+#### GetLibraryOptions
+
+| Prop                            | Type                 | Description                                                                                           |
+| ------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------- |
+| **`offset`**                    | <code>number</code>  | Number of assets to skip from the beginning of the query.                                             |
+| **`limit`**                     | <code>number</code>  | Maximum number of assets to return. Omit to return everything that matches.                           |
+| **`includeImages`**             | <code>boolean</code> | Include images in the result. Defaults to `true`.                                                     |
+| **`includeVideos`**             | <code>boolean</code> | Include videos in the result. Defaults to `false`.                                                    |
+| **`includeAlbumData`**          | <code>boolean</code> | Include information about the albums each asset belongs to. Defaults to `false`.                      |
+| **`includeCloudData`**          | <code>boolean</code> | Include assets stored in the cloud (iCloud / Google Photos). Defaults to `true`.                      |
+| **`useOriginalFileNames`**      | <code>boolean</code> | If `true`, use the original filenames reported by the OS when available.                              |
+| **`thumbnailWidth`**            | <code>number</code>  | Width of the generated thumbnails. Defaults to `512`.                                                 |
+| **`thumbnailHeight`**           | <code>number</code>  | Height of the generated thumbnails. Defaults to `384`.                                                |
+| **`thumbnailQuality`**          | <code>number</code>  | JPEG quality for generated thumbnails (0-1). Defaults to `0.5`.                                       |
+| **`includeFullResolutionData`** | <code>boolean</code> | When `true`, copies the full sized asset into the app cache and returns its URL. Defaults to `false`. |
+
+
+### Type Aliases
+
+
+#### PhotoLibraryAuthorizationState
+
+<code>'authorized' | 'limited' | 'denied' | 'notDetermined'</code>
+
+
+#### PhotoAssetType
+
+<code>'image' | 'video'</code>
 
 </docgen-api>
