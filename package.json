@@ -1,6 +1,6 @@
 {
   "name": "@capgo/capacitor-photo-library",
-  "version": "7.1.1",
+  "version": "7.1.2",
   "description": "Capacitor plugin Displays photo gallery as web page, or boring native screen which you cannot modify but require no authorization",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
