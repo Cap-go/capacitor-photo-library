@@ -1,6 +1,6 @@
 {
-  "appId": "com.example.plugin",
-  "appName": "example-app",
+  "appId": "app.capgo.photo.library",
+  "appName": "Photo Library Example",
   "webDir": "dist",
   "plugins": {
     "SplashScreen": {
