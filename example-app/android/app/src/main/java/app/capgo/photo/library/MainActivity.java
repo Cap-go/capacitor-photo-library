@@ -1,4 +1,4 @@
-package com.example.plugin;
+package app.capgo.photo.library;
 
 import com.getcapacitor.BridgeActivity;
 
