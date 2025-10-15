@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.1.9](https://github.com/Cap-go/capacitor-photo-library/compare/7.1.8...7.1.9) (2025-10-15)
+
+
+### Bug Fixes
+
+* lock and lint ([6fa35e0](https://github.com/Cap-go/capacitor-photo-library/commit/6fa35e040fd4f2add599bc65a9f2e16eefc59029))
+
 ## [7.1.8](https://github.com/Cap-go/capacitor-photo-library/compare/7.1.7...7.1.8) (2025-10-15)
 
 
