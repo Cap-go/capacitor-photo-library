@@ -8,17 +8,196 @@
       content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <meta name="format-detection" content="telephone=no" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      body {
+        margin: 0;
+        padding: 24px;
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      section {
+        background: rgba(15, 23, 42, 0.65);
+        padding: 1.25rem;
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      h1 {
+        margin: 0;
+      }
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 0.65rem 1.5rem;
+        cursor: pointer;
+        background: linear-gradient(120deg, #22d3ee, #6366f1);
+        color: #0f172a;
+        font-weight: 600;
+      }
+      input,
+      textarea {
+        font-family: inherit;
+        font-size: 1rem;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        background: rgba(15, 23, 42, 0.6);
+        color: inherit;
+        padding: 0.5rem 0.75rem;
+      }
+      input[type='checkbox'] {
+        width: auto;
+      }
+      textarea {
+        min-height: 120px;
+      }
+      .button-row {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .grid {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      }
+      .grid label,
+      .toggle-row label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        font-weight: 600;
+      }
+      .toggle-row {
+        display: flex;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+      }
+      .toggle-row label {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 500;
+      }
+      pre#responseOutput {
+        background: rgba(15, 23, 42, 0.7);
+        padding: 1rem;
+        border-radius: 10px;
+        max-height: 340px;
+        overflow: auto;
+      }
+      #assetsContainer {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      }
+      .asset-card {
+        background: rgba(15, 23, 42, 0.5);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 12px;
+        padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .asset-card img {
+        width: 100%;
+        border-radius: 8px;
+        object-fit: cover;
+      }
+      #albumList {
+        margin: 0;
+        padding-left: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      #albumList li {
+        list-style: disc;
+      }
+    </style>
   </head>
   <body>
     <main>
-      <h1>Capacitor Test Plugin Project</h1>
+      <h1>@capgo/capacitor-photo-library Demo</h1>
       <p>
-        This project can be used to test out the functionality of your plugin. Nothing in the
-        <em>example-app/</em> folder will be published to npm when using this template, so you can create away!
+        Exercise key APIs to enumerate assets, request permissions, and preview selections. Run on device or simulator for meaningful results.
       </p>
-      <label for="echoInput">Echo Text:</label>
-      <input type="text" id="echoInput" name="echoInput" value="Hello World!" />
-      <button onclick="testEcho()">Click Me!</button>
+
+      <section>
+        <h2>Authorization</h2>
+        <div class="button-row">
+          <button id="checkAuthButton" type="button">Check Authorization</button>
+          <button id="requestAuthButton" type="button">Request Authorization</button>
+        </div>
+        <p id="authStatus">Not queried yet.</p>
+      </section>
+
+      <section>
+        <h2>Albums</h2>
+        <button id="loadAlbumsButton" type="button">Load Albums</button>
+        <ul id="albumList"></ul>
+      </section>
+
+      <section>
+        <h2>Query Library</h2>
+        <div class="grid">
+          <label>Offset <input type="number" id="offsetInput" min="0" value="0" /></label>
+          <label>Limit <input type="number" id="limitInput" min="0" value="25" /></label>
+          <label>Thumb Width <input type="number" id="thumbWidthInput" min="64" value="512" /></label>
+          <label>Thumb Height <input type="number" id="thumbHeightInput" min="64" value="384" /></label>
+        </div>
+        <div class="toggle-row">
+          <label><input type="checkbox" id="includeImagesInput" checked /> Include images</label>
+          <label><input type="checkbox" id="includeVideosInput" /> Include videos</label>
+          <label><input type="checkbox" id="includeAlbumsInput" /> Include album data</label>
+          <label><input type="checkbox" id="includeFullInput" /> Include full resolution</label>
+        </div>
+        <button id="getLibraryButton" type="button">Fetch Assets</button>
+        <p id="librarySummary">No assets loaded yet.</p>
+      </section>
+
+      <section>
+        <h2>Asset Actions</h2>
+        <label for="assetIdInput">Asset ID</label>
+        <input type="text" id="assetIdInput" placeholder="Paste asset id from results" />
+
+        <div class="button-row">
+          <button id="getPhotoUrlButton" type="button">Get Photo URL</button>
+          <button id="getThumbnailButton" type="button">Get Thumbnail URL</button>
+          <button id="pickMediaButton" type="button">Pick Media</button>
+        </div>
+        <div class="grid">
+          <label>Thumb Width <input type="number" id="thumbActionWidth" min="32" value="256" /></label>
+          <label>Thumb Height <input type="number" id="thumbActionHeight" min="32" value="256" /></label>
+          <label>Thumb Quality <input type="number" step="0.1" id="thumbActionQuality" min="0" max="1" value="0.7" /></label>
+          <label>Selection Limit <input type="number" id="selectionLimitInput" min="0" value="0" /></label>
+        </div>
+      </section>
+
+      <p id="statusText">Status: Idle</p>
+
+      <section>
+        <h2>Latest Response</h2>
+        <pre id="responseOutput">Awaiting interaction.</pre>
+      </section>
+
+      <section>
+        <h2>Assets</h2>
+        <div id="assetsContainer" class="assets-grid"></div>
+      </section>
     </main>
 
     <script src="./js/example.js" type="module"></script>
