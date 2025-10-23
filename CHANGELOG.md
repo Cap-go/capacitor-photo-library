@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.2.0](https://github.com/Cap-go/capacitor-photo-library/compare/7.1.10...7.2.0) (2025-10-23)
+
+
+### Features
+
+* add getPluginVersion method to PhotoLibraryPlugin and web implementation ([d8b7453](https://github.com/Cap-go/capacitor-photo-library/commit/d8b74530b9e251c11297e4b5dfd5a3737ecd3c1d))
+
+
+### Bug Fixes
+
+* readme ([8ccb1bc](https://github.com/Cap-go/capacitor-photo-library/commit/8ccb1bc613e3f15e2ade9f0af5e2d99a24e5e6a6))
+* remove footer in discord ([b83929d](https://github.com/Cap-go/capacitor-photo-library/commit/b83929dcd78563e18fcf8c21f159d5b296d9a30c))
+* remove unnecessary content field from Discord release webhook ([f3170aa](https://github.com/Cap-go/capacitor-photo-library/commit/f3170aa7a4f27421a4cd54400bc5d17d1ea0240a))
+* update Discord release webhook username to include repository name ([21065ac](https://github.com/Cap-go/capacitor-photo-library/commit/21065ac30a069db9fcf9fb00038c2715e909fea5))
+
 ## [7.1.10](https://github.com/Cap-go/capacitor-photo-library/compare/7.1.9...7.1.10) (2025-10-16)
 
 ## [7.1.9](https://github.com/Cap-go/capacitor-photo-library/compare/7.1.8...7.1.9) (2025-10-15)
