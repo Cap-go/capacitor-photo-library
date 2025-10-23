@@ -66,6 +66,7 @@ you need to free up space.
 * [`getPhotoUrl(...)`](#getphotourl)
 * [`getThumbnailUrl(...)`](#getthumbnailurl)
 * [`pickMedia(...)`](#pickmedia)
+* [`getPluginVersion()`](#getpluginversion)
 * [Interfaces](#interfaces)
 * [Type Aliases](#type-aliases)
 
@@ -180,6 +181,19 @@ The selected files are copied into the application cache and returned with porta
 | **`options`** | <code><a href="#pickmediaoptions">PickMediaOptions</a></code> |
 
 **Returns:** <code>Promise&lt;<a href="#pickmediaresult">PickMediaResult</a>&gt;</code>
+
+--------------------
+
+
+### getPluginVersion()
+
+```typescript
+getPluginVersion() => Promise<{ version: string; }>
+```
+
+Get the native Capacitor plugin version
+
+**Returns:** <code>Promise&lt;{ version: string; }&gt;</code>
 
 --------------------
 
