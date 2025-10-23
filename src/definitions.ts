@@ -151,4 +151,12 @@ export interface PhotoLibraryPlugin {
    * The selected files are copied into the application cache and returned with portable URLs.
    */
   pickMedia(options?: PickMediaOptions): Promise<PickMediaResult>;
+
+  /**
+   * Get the native Capacitor plugin version
+   *
+   * @returns {Promise<{ id: string }>} an Promise with version for this device
+   * @throws An error if the something went wrong
+   */
+  getPluginVersion(): Promise<{ version: string }>;
 }

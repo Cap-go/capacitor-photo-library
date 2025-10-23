@@ -5,6 +5,7 @@ import PhotosUI
 
 @objc(PhotoLibraryPlugin)
 public class PhotoLibraryPlugin: CAPPlugin, CAPBridgedPlugin {
+    private let PLUGIN_VERSION: String = ""
     public let identifier = "PhotoLibraryPlugin"
     public let jsName = "PhotoLibrary"
     public let pluginMethods: [CAPPluginMethod] = [
@@ -14,7 +15,8 @@ public class PhotoLibraryPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "getLibrary", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getPhotoUrl", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getThumbnailUrl", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "pickMedia", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "pickMedia", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getPluginVersion", returnType: CAPPluginReturnPromise)
     ]
 
     private var service = PhotoLibraryService()
@@ -194,4 +196,9 @@ extension PhotoLibraryPlugin: PHPickerViewControllerDelegate {
             call.resolve(["assets": mapped])
         }
     }
+
+    @objc func getPluginVersion(_ call: CAPPluginCall) {
+        call.resolve(["version": self.PLUGIN_VERSION])
+    }
+
 }

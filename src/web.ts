@@ -44,4 +44,8 @@ export class PhotoLibraryWeb extends WebPlugin implements PhotoLibraryPlugin {
   async pickMedia(_options?: PickMediaOptions): Promise<PickMediaResult> {
     throw this.unimplemented('pickMedia');
   }
+
+  async getPluginVersion(): Promise<{ version: string }> {
+    return { version: 'web' };
+  }
 }

@@ -36,6 +36,8 @@ import java.util.concurrent.Executors;
 )
 public class PhotoLibraryPlugin extends Plugin {
 
+    private final String PLUGIN_VERSION = "";
+
     static final String PERMISSION_MEDIA = "media";
     static final String PERMISSION_MEDIA_LEGACY = "media_legacy";
 
@@ -323,5 +325,16 @@ public class PhotoLibraryPlugin extends Plugin {
 
     private String permissionAlias() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ? PERMISSION_MEDIA : PERMISSION_MEDIA_LEGACY;
+    }
+
+    @PluginMethod
+    public void getPluginVersion(final PluginCall call) {
+        try {
+            final JSObject ret = new JSObject();
+            ret.put("version", this.PLUGIN_VERSION);
+            call.resolve(ret);
+        } catch (final Exception e) {
+            call.reject("Could not get plugin version", e);
+        }
     }
 }
