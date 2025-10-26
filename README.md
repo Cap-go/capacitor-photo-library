@@ -8,6 +8,10 @@
 
 Displays photo gallery as web page, or boring native screen which you cannot modify but require no authorization
 
+## Documentation
+
+The most complete doc is available here: https://capgo.app/docs/plugins/photo-library/
+
 ## Install
 
 ```bash
