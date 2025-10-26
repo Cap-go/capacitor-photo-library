@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.2.2](https://github.com/Cap-go/capacitor-photo-library/compare/7.2.1...7.2.2) (2025-10-26)
+
+
+### Bug Fixes
+
+* prevent bump for app ([ebd7e08](https://github.com/Cap-go/capacitor-photo-library/commit/ebd7e08a40fd1d5661028c3b5d3e6e6eefd9f996))
+
 ## [7.2.1](https://github.com/Cap-go/capacitor-photo-library/compare/7.2.0...7.2.1) (2025-10-26)
 
 ## [7.2.0](https://github.com/Cap-go/capacitor-photo-library/compare/7.1.10...7.2.0) (2025-10-23)
