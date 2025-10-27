@@ -36,7 +36,7 @@ import java.util.concurrent.Executors;
 )
 public class PhotoLibraryPlugin extends Plugin {
 
-    private final String PLUGIN_VERSION = "7.2.2";
+    private final String PLUGIN_VERSION = "7.2.3";
 
     static final String PERMISSION_MEDIA = "media";
     static final String PERMISSION_MEDIA_LEGACY = "media_legacy";
