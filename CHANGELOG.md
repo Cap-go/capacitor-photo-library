@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [7.2.4](https://github.com/Cap-go/capacitor-photo-library/compare/7.2.3...7.2.4) (2025-10-28)
+
+
+### Bug Fixes
+
+* CI/CD config ([ff7c871](https://github.com/Cap-go/capacitor-photo-library/commit/ff7c871829df395e920c300b39d3daa7568f0356))
+* remove unused PhotoLibrary class ([181a4c7](https://github.com/Cap-go/capacitor-photo-library/commit/181a4c7fa3f69c524fb8ee6c01aa81172fb26e4a))
+* update github action ([96d39c3](https://github.com/Cap-go/capacitor-photo-library/commit/96d39c337823e987a7e4e85dbe118b6963434b3f))
+
 ## [7.2.3](https://github.com/Cap-go/capacitor-photo-library/compare/7.2.2...7.2.3) (2025-10-27)
 
 
