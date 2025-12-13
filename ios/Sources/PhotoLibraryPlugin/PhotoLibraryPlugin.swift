@@ -5,7 +5,7 @@ import PhotosUI
 
 @objc(PhotoLibraryPlugin)
 public class PhotoLibraryPlugin: CAPPlugin, CAPBridgedPlugin {
-    private let pluginVersion: String = "7.2.11"
+    private let pluginVersion: String = "8.0.1"
     public let identifier = "PhotoLibraryPlugin"
     public let jsName = "PhotoLibrary"
     public let pluginMethods: [CAPPluginMethod] = [
