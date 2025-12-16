@@ -24,6 +24,7 @@
   "bugs": {
     "url": "https://github.com/Cap-go/capacitor-photo-library/issues"
   },
+  "homepage": "https://capgo.app/docs/plugins/photo-library/",
   "keywords": [
     "capacitor",
     "plugin",
