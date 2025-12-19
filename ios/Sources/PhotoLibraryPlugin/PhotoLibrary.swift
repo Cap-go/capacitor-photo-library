@@ -291,27 +291,14 @@ final class PhotoLibraryService {
     }
 
     func currentAuthorizationState() -> PhotoLibraryAuthorizationState {
-        if #available(iOS 14, *) {
-            let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-            return authorizationState(from: status)
-        } else {
-            let status = PHPhotoLibrary.authorizationStatus()
-            return authorizationState(from: status)
-        }
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        return authorizationState(from: status)
     }
 
     func requestAuthorization(completion: @escaping (PhotoLibraryAuthorizationState) -> Void) {
-        if #available(iOS 14, *) {
-            PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
-                DispatchQueue.main.async {
-                    completion(self.authorizationState(from: status))
-                }
-            }
-        } else {
-            PHPhotoLibrary.requestAuthorization { status in
-                DispatchQueue.main.async {
-                    completion(self.authorizationState(from: status))
-                }
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+            DispatchQueue.main.async {
+                completion(self.authorizationState(from: status))
             }
         }
     }
@@ -867,13 +854,9 @@ final class PhotoLibraryService {
     }
 
     private func mimeType(for resource: PHAssetResource?, fallbackName: String) -> String {
-        if #available(iOS 14.0, *), let uniformTypeIdentifier = resource?.uniformTypeIdentifier {
+        if let uniformTypeIdentifier = resource?.uniformTypeIdentifier {
             if let type = UTType(uniformTypeIdentifier), let mime = type.preferredMIMEType {
                 return mime
-            }
-        } else if let uti = resource?.uniformTypeIdentifier as CFString? {
-            if let unmanagedMime = UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType) {
-                return unmanagedMime.takeRetainedValue() as String
             }
         }
 
@@ -893,13 +876,9 @@ final class PhotoLibraryService {
             }
         }
 
-        if #available(iOS 14.0, *), let uti = resource?.uniformTypeIdentifier {
+        if let uti = resource?.uniformTypeIdentifier {
             if let type = UTType(uti), let preferredExt = type.preferredFilenameExtension {
                 return preferredExt
-            }
-        } else if let uti = resource?.uniformTypeIdentifier as CFString? {
-            if let unmanagedExt = UTTypeCopyPreferredTagWithClass(uti, kUTTagClassFilenameExtension) {
-                return unmanagedExt.takeRetainedValue() as String
             }
         }
 
@@ -918,21 +897,8 @@ final class PhotoLibraryService {
     }
 
     private func hashedIdentifier(_ identifier: String) -> String {
-        if #available(iOS 13.0, *) {
-            let digest = SHA256.hash(data: Data(identifier.utf8))
-            return digest.map { String(format: "%02x", $0) }.joined()
-        } else {
-            let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
-            var sanitized = ""
-            for scalar in identifier.unicodeScalars {
-                if allowed.contains(scalar) {
-                    sanitized.append(String(scalar))
-                } else {
-                    sanitized.append("_")
-                }
-            }
-            return sanitized
-        }
+        let digest = SHA256.hash(data: Data(identifier.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
     }
 
     private func fileSize(at url: URL) -> Int64 {
