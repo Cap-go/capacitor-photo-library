@@ -562,10 +562,9 @@ final class PhotoLibraryService {
                     completion(nil)
                     return
                 }
-                self.queue.async {
-                    let asset = self.createAssetFromPickedVideo(tempURL: url, identifier: identifier, suggestedName: provider.suggestedName, options: options)
-                    completion(asset)
-                }
+                // Copy synchronously before iOS deletes the temp file
+                let asset = self.createAssetFromPickedVideo(tempURL: url, identifier: identifier, suggestedName: provider.suggestedName, options: options)
+                completion(asset)
             }
             return
         }
