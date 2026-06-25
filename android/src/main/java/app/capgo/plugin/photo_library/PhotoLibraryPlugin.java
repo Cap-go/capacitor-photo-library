@@ -5,12 +5,15 @@ import android.app.Activity;
 import android.content.ClipData;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import androidx.activity.result.ActivityResult;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -31,6 +34,10 @@ import java.util.concurrent.Executors;
             strings = { Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO },
             alias = PhotoLibraryPlugin.PERMISSION_MEDIA
         ),
+        @Permission(
+            strings = { Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED },
+            alias = PhotoLibraryPlugin.PERMISSION_MEDIA_PARTIAL
+        ),
         @Permission(strings = { Manifest.permission.READ_EXTERNAL_STORAGE }, alias = PhotoLibraryPlugin.PERMISSION_MEDIA_LEGACY)
     }
 )
@@ -39,9 +46,11 @@ public class PhotoLibraryPlugin extends Plugin {
     private final String pluginVersion = "8.0.17";
 
     static final String PERMISSION_MEDIA = "media";
+    static final String PERMISSION_MEDIA_PARTIAL = "media_partial";
     static final String PERMISSION_MEDIA_LEGACY = "media_legacy";
 
     private static final String STATE_AUTHORIZED = "authorized";
+    private static final String STATE_LIMITED = "limited";
     private static final String STATE_DENIED = "denied";
 
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -70,20 +79,32 @@ public class PhotoLibraryPlugin extends Plugin {
 
     @PluginMethod
     public void requestAuthorization(PluginCall call) {
-        String alias = permissionAlias();
-        if (hasPermission(alias)) {
-            call.resolve(statusObject(STATE_AUTHORIZED));
+        String state = currentAuthorizationState();
+        if (!STATE_DENIED.equals(state)) {
+            call.resolve(statusObject(state));
             return;
         }
 
         bridge.saveCall(call);
-        requestPermissionForAlias(alias, call, "permissionCallback");
+        requestPermissionForAlias(permissionAlias(), call, "permissionCallback");
     }
 
     @PermissionCallback
     private void permissionCallback(PluginCall call) {
-        String state = hasMediaPermissions() ? STATE_AUTHORIZED : STATE_DENIED;
-        call.resolve(statusObject(state));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && STATE_DENIED.equals(currentAuthorizationState())) {
+            PermissionState partialState = getPermissionState(PERMISSION_MEDIA_PARTIAL);
+            if (partialState != PermissionState.GRANTED && !isAndroidPermissionGranted(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)) {
+                requestPermissionForAlias(PERMISSION_MEDIA_PARTIAL, call, "partialPermissionCallback");
+                return;
+            }
+        }
+
+        call.resolve(statusObject(currentAuthorizationState()));
+    }
+
+    @PermissionCallback
+    private void partialPermissionCallback(PluginCall call) {
+        call.resolve(statusObject(currentAuthorizationState()));
     }
 
     @PluginMethod
@@ -316,11 +337,33 @@ public class PhotoLibraryPlugin extends Plugin {
     }
 
     private boolean hasMediaPermissions() {
-        return hasPermission(permissionAlias());
+        String state = currentAuthorizationState();
+        return STATE_AUTHORIZED.equals(state) || STATE_LIMITED.equals(state);
     }
 
     private String currentAuthorizationState() {
-        return hasMediaPermissions() ? STATE_AUTHORIZED : STATE_DENIED;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (getPermissionState(PERMISSION_MEDIA) == PermissionState.GRANTED) {
+                return STATE_AUTHORIZED;
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                if (
+                    getPermissionState(PERMISSION_MEDIA_PARTIAL) == PermissionState.GRANTED ||
+                    isAndroidPermissionGranted(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+                ) {
+                    return STATE_LIMITED;
+                }
+            }
+
+            return STATE_DENIED;
+        }
+
+        return getPermissionState(PERMISSION_MEDIA_LEGACY) == PermissionState.GRANTED ? STATE_AUTHORIZED : STATE_DENIED;
+    }
+
+    private boolean isAndroidPermissionGranted(String permission) {
+        return ContextCompat.checkSelfPermission(getContext(), permission) == PackageManager.PERMISSION_GRANTED;
     }
 
     private String permissionAlias() {
