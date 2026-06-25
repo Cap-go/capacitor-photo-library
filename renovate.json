@@ -21,15 +21,6 @@
       "automerge": true
     },
     {
-      "matchPackageNames": [
-        "eslint"
-      ],
-      "matchManagers": [
-        "npm"
-      ],
-      "enabled": false
-    },
-    {
       "matchPackagePatterns": [
         "^com\\.google\\..*"
       ],
