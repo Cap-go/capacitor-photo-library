@@ -34,10 +34,7 @@ import java.util.concurrent.Executors;
             strings = { Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO },
             alias = PhotoLibraryPlugin.PERMISSION_MEDIA
         ),
-        @Permission(
-            strings = { Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED },
-            alias = PhotoLibraryPlugin.PERMISSION_MEDIA_PARTIAL
-        ),
+        @Permission(strings = { Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED }, alias = PhotoLibraryPlugin.PERMISSION_MEDIA_PARTIAL),
         @Permission(strings = { Manifest.permission.READ_EXTERNAL_STORAGE }, alias = PhotoLibraryPlugin.PERMISSION_MEDIA_LEGACY)
     }
 )
@@ -93,7 +90,9 @@ public class PhotoLibraryPlugin extends Plugin {
     private void permissionCallback(PluginCall call) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && STATE_DENIED.equals(currentAuthorizationState())) {
             PermissionState partialState = getPermissionState(PERMISSION_MEDIA_PARTIAL);
-            if (partialState != PermissionState.GRANTED && !isAndroidPermissionGranted(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)) {
+            if (
+                partialState != PermissionState.GRANTED && !isAndroidPermissionGranted(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+            ) {
                 requestPermissionForAlias(PERMISSION_MEDIA_PARTIAL, call, "partialPermissionCallback");
                 return;
             }
