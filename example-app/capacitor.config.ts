@@ -4,7 +4,7 @@ import pkg from './package.json';
 
 const config: CapacitorConfig = {
   appId: 'app.capgo.photo.library',
-  appName: 'Photo Library Example',
+  appName: '@capgo/capacitor-photo-library',
   webDir: 'dist',
   plugins: {
     SplashScreen: {
