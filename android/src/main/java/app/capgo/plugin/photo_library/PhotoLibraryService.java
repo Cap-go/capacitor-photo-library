@@ -110,7 +110,7 @@ final class PhotoLibraryService {
         Selection selection = buildSelection(options);
         int totalCount = countItems(contentUri, selection);
 
-        String sortOrder = buildSortOrder(options);
+        String sortOrder = librarySortOrder();
         JSArray assetsArray = new JSArray();
         int collected = 0;
         int skipped = 0;
@@ -118,7 +118,7 @@ final class PhotoLibraryService {
         try (Cursor cursor = resolver.query(contentUri, projection, selection.selection, selection.args, sortOrder)) {
             if (cursor != null) {
                 while (cursor.moveToNext()) {
-                    if (options.limit == null && options.offset > 0 && skipped < options.offset) {
+                    if (options.offset > 0 && skipped < options.offset) {
                         skipped++;
                         continue;
                     }
@@ -400,15 +400,8 @@ final class PhotoLibraryService {
         return count;
     }
 
-    private String buildSortOrder(GetLibraryOptions options) {
-        StringBuilder builder = new StringBuilder(MediaStore.MediaColumns.DATE_ADDED + " DESC");
-        if (options.limit != null) {
-            builder.append(" LIMIT ").append(options.limit);
-            if (options.offset > 0) {
-                builder.append(" OFFSET ").append(options.offset);
-            }
-        }
-        return builder.toString();
+    static String librarySortOrder() {
+        return MediaStore.MediaColumns.DATE_ADDED + " DESC";
     }
 
     private JSObject buildAsset(Cursor cursor, GetLibraryOptions options) throws IOException {
