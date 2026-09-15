@@ -82,7 +82,7 @@ public class PhotoLibraryPlugin extends Plugin {
             return;
         }
 
-        bridge.saveCall(call);
+        call.setKeepAlive(true);
         requestPermissionForAlias(permissionAlias(), call, "permissionCallback");
     }
 
@@ -243,7 +243,7 @@ public class PhotoLibraryPlugin extends Plugin {
 
         pickInProgress = true;
         pendingPickOptions = options;
-        bridge.saveCall(call);
+        call.setKeepAlive(true);
         startActivityForResult(call, intent, "handlePickMedia");
     }
 
