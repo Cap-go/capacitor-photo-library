@@ -1,12 +1,27 @@
 # @capgo/capacitor-photo-library
-<a href="https://capgo.app/"><img src="https://capgo.app/readme-banner.svg?repo=Cap-go/capacitor-photo-library" alt="Capgo - Instant updates for Capacitor" /></a>
+
+Build your own photo gallery in your Capacitor app: list albums, page through photos and videos with thumbnails, or open the native picker without full library access.
+
+<a href="https://capgo.app/?ref=plugin_photo_library"><img src="https://capgo.app/readme-banner.svg?repo=Cap-go/capacitor-photo-library" alt="Capgo - Instant updates for Capacitor" /></a>
 
 <div align="center">
-  <h2><a href="https://capgo.app/?ref=plugin_photo_library"> ➡️ Get Instant updates for your App with Capgo</a></h2>
-  <h2><a href="https://capgo.app/consulting/?ref=plugin_photo_library"> Missing a feature? We’ll build the plugin for you 💪</a></h2>
+  <p><b>Capgo</b>: open-source live updates for Ionic and Capacitor apps. Ship OTA fixes and features instantly, without waiting for app store review.</p>
+  <h2><a href="https://capgo.app/register/?ref=plugin_photo_library">➡️ Get started for free</a></h2>
+  <p>14-day unlimited free trial. No credit card required</p>
+  <p><a href="https://capgo.app/consulting/?ref=plugin_photo_library">Missing a feature? We'll build the plugin for you 💪</a></p>
 </div>
 
-Displays photo gallery as web page, or boring native screen which you cannot modify but require no authorization
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Cap-go/capacitor-photo-library/main/assets/github-social-preview.png" alt="@capgo/capacitor-photo-library for Capacitor apps" width="300" />
+</p>
+
+## Key features
+
+- **Library access**: `checkAuthorization()` and `requestAuthorization()`, including limited access on iOS.
+- **Albums and assets**: `getAlbums()` and `getLibrary()` with paging and optional videos.
+- **Display URLs**: `getThumbnailUrl()` and `getPhotoUrl()` return URLs your WebView can show.
+- **System picker**: `pickMedia()` with a selection limit, no library permission needed.
+- **Platforms**: iOS and Android. iOS uses Photos and PhotosUI, Android uses MediaStore. Not available on web.
 
 ## Documentation
 
