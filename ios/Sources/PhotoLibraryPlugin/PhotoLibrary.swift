@@ -928,6 +928,26 @@ private extension CAPPluginCall {
 }
 
 private extension PHAsset {
+    var primaryResource: PHAssetResource? {
+        guard #available(iOS 9.0, *) else {
+            return nil
+        }
+        let resources = PHAssetResource.assetResources(for: self)
+        switch mediaType {
+        case .image:
+            if let resource = resources.first(where: { $0.type == .photo || $0.type == .fullSizePhoto || $0.type == .alternatePhoto }) {
+                return resource
+            }
+        case .video:
+            if let resource = resources.first(where: { $0.type == .video || $0.type == .fullSizeVideo }) {
+                return resource
+            }
+        default:
+            break
+        }
+        return resources.first
+    }
+
     var originalFileName: String? {
         if #available(iOS 9.0, *) {
             let resources = PHAssetResource.assetResources(for: self)
@@ -937,6 +957,6 @@ private extension PHAsset {
     }
 
     var fileName: String? {
-        return value(forKey: "filename") as? String
+        return primaryResource?.originalFilename
     }
 }
