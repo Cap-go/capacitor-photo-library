@@ -307,12 +307,18 @@ public class PhotoLibraryPlugin extends Plugin {
         }
 
         ContentResolver resolver = getContext().getContentResolver();
-        int flags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        // takePersistableUriPermission accepts only FLAG_GRANT_READ_URI_PERMISSION
+        // and FLAG_GRANT_WRITE_URI_PERMISSION (0x3). The result intent also carries
+        // FLAG_GRANT_PERSISTABLE_URI_PERMISSION (0x40). Passing that bit throws
+        // IllegalArgumentException ("Requested flags 0x41, but only 0x3 are allowed")
+        // on Android 17. That is not a SecurityException, so the activity callback
+        // dies and pickMedia never resolves.
+        int flags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         if (flags != 0) {
             for (Uri uri : uris) {
                 try {
                     resolver.takePersistableUriPermission(uri, flags);
-                } catch (SecurityException ignored) {}
+                } catch (SecurityException | IllegalArgumentException ignored) {}
             }
         }
 
