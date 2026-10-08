@@ -834,22 +834,7 @@ final class PhotoLibraryService {
     }
 
     private func preferredResource(for asset: PHAsset) -> PHAssetResource? {
-        let resources = PHAssetResource.assetResources(for: asset)
-
-        switch asset.mediaType {
-        case .image:
-            if let resource = resources.first(where: { $0.type == .photo || $0.type == .fullSizePhoto || $0.type == .alternatePhoto }) {
-                return resource
-            }
-        case .video:
-            if let resource = resources.first(where: { $0.type == .video || $0.type == .fullSizeVideo }) {
-                return resource
-            }
-        default:
-            break
-        }
-
-        return resources.first
+        return asset.primaryResource
     }
 
     private func mimeType(for resource: PHAssetResource?, fallbackName: String) -> String {
