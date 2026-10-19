@@ -549,14 +549,21 @@ final class PhotoLibraryService {
     @Nullable
     private File ensureThumbnail(MediaAsset asset, int width, int height, double quality) throws IOException {
         int qualityPercent = (int) Math.max(0, Math.min(100, Math.round(quality * 100)));
-        String name = String.format(Locale.US, "%s_%dx%d_q%d.jpg", hashed(asset.identifier), width, height, qualityPercent);
+        String name = ThumbnailHelper.thumbnailCacheFileName(hashed(asset.identifier), width, height, qualityPercent);
         File target = new File(thumbnailDirectory, name);
         if (target.exists()) {
             return target;
         }
 
         Bitmap bitmap = null;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (ThumbnailHelper.isImageMediaType(asset.mediaType)) {
+            bitmap = ThumbnailHelper.decodeImageFromOriginal(resolver, asset.uri, width, height);
+            if (bitmap == null) {
+                Logger.debug("PhotoLibrary", "ImageDecoder failed or unavailable, falling back to MediaStore thumbnail");
+            }
+        }
+
+        if (bitmap == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             try {
                 bitmap = resolver.loadThumbnail(asset.uri, new Size(width, height), null);
             } catch (IOException e) {
@@ -580,9 +587,9 @@ final class PhotoLibraryService {
             return null;
         }
 
-        Bitmap scaled = Bitmap.createScaledBitmap(bitmap, width, height, true);
-        if (bitmap != scaled) {
-            bitmap.recycle();
+        Bitmap scaled = ThumbnailHelper.scaleAspectFill(bitmap, width, height);
+        if (scaled == null) {
+            return null;
         }
 
         try (FileOutputStream out = new FileOutputStream(target)) {
@@ -658,9 +665,10 @@ final class PhotoLibraryService {
             return null;
         }
 
+        int qualityPercent = (int) Math.max(0, Math.min(100, Math.round(quality * 100)));
         File target = new File(
             thumbnailDirectory,
-            String.format(Locale.US, "%s_%dx%d_q%.0f.jpg", hashed(identifier), width, height, quality * 100)
+            ThumbnailHelper.thumbnailCacheFileName(hashed(identifier), width, height, qualityPercent)
         );
 
         if (!target.exists()) {
@@ -669,26 +677,25 @@ final class PhotoLibraryService {
                 if (bitmap == null) {
                     return null;
                 }
-                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, width, height, true);
-                if (scaled != bitmap) {
-                    bitmap.recycle();
+                Bitmap scaled = ThumbnailHelper.scaleAspectFill(bitmap, width, height);
+                if (scaled == null) {
+                    return null;
                 }
                 try (FileOutputStream out = new FileOutputStream(target)) {
-                    scaled.compress(Bitmap.CompressFormat.JPEG, (int) Math.round(Math.max(0, Math.min(1, quality)) * 100), out);
+                    scaled.compress(Bitmap.CompressFormat.JPEG, qualityPercent, out);
                 }
                 scaled.recycle();
             } else if ("video".equals(picked.type)) {
                 Bitmap bitmap;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     bitmap = ThumbnailUtils.createVideoThumbnail(picked.file, new Size(width, height), null);
+                    if (bitmap != null) {
+                        bitmap = ThumbnailHelper.scaleAspectFill(bitmap, width, height);
+                    }
                 } else {
                     bitmap = ThumbnailUtils.createVideoThumbnail(picked.file.getAbsolutePath(), MediaStore.Video.Thumbnails.MINI_KIND);
-                    if (bitmap != null && (bitmap.getWidth() != width || bitmap.getHeight() != height)) {
-                        Bitmap rescaled = Bitmap.createScaledBitmap(bitmap, width, height, true);
-                        if (rescaled != bitmap) {
-                            bitmap.recycle();
-                        }
-                        bitmap = rescaled;
+                    if (bitmap != null) {
+                        bitmap = ThumbnailHelper.scaleAspectFill(bitmap, width, height);
                     }
                 }
 
