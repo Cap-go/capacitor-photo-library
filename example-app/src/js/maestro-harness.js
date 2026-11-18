@@ -116,12 +116,17 @@ const flows = {
 
   async 'pick-media-cancel'() {
     setSummary('PHASE:pick-media-cancel:opening');
-    await sleep(750);
-    const result = await PhotoLibrary.pickMedia({ selectionLimit: 1, includeImages: true, includeVideos: false });
-    if (result.assets.length !== 0) {
-      throw new Error(`expected empty pick result on cancel, got ${result.assets.length}`);
-    }
-    setMarker('pick-media-cancel', true, 'assets=0');
+    void PhotoLibrary.pickMedia({ selectionLimit: 1, includeImages: true, includeVideos: false })
+      .then((result) => {
+        if (result.assets.length !== 0) {
+          throw new Error(`expected empty pick result on cancel, got ${result.assets.length}`);
+        }
+        setMarker('pick-media-cancel', true, 'assets=0');
+      })
+      .catch((error) => {
+        setMarker('pick-media-cancel', false, String(error?.message ?? error));
+      });
+    await sleep(250);
   },
 
   async 'kill-relaunch-mid-library'() {
