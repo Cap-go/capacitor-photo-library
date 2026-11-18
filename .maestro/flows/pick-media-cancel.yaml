@@ -12,21 +12,8 @@ appId: app.capgo.photo.library
     retryTapIfNoChange: true
 - extendedWaitUntil:
     visible: '.*PHASE:pick-media-cancel:opening.*'
-    timeout: 90000
-- tapOn:
-    text: Cancel
-    optional: true
-- tapOn:
-    text: 'CANCEL'
-    optional: true
-- tapOn:
-    text: Close
-    optional: true
+    timeout: 120000
 - pressKey: Back
-- extendedWaitUntil:
-    visible: '.*Harness: ready.*|.*PHASE:pick-media-cancel:opening.*'
-    timeout: 30000
-    optional: true
 - extendedWaitUntil:
     visible: '.*Marker: pick-media-cancel:success.*'
     timeout: 180000

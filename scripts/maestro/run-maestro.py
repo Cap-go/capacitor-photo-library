@@ -68,33 +68,6 @@ def run_permission_denied_suite(timeout, device, platform, results):
     )
 
 
-def run_pick_media_cancel_suite(timeout, device, platform, results):
-    app_id = 'app.capgo.photo.library'
-    pre_status = run_command(
-        build_maestro_command('pick-media-cancel-pre', device, platform, results),
-        results / 'junit.xml',
-        timeout,
-    )
-    if pre_status != 0:
-        return pre_status
-    time.sleep(2)
-    for _ in range(2):
-        dismiss = subprocess.run(['adb', 'shell', 'input', 'keyevent', '4'], check=False)
-        if dismiss.returncode != 0:
-            return dismiss.returncode
-        time.sleep(0.35)
-    subprocess.run(
-        ['adb', 'shell', 'monkey', '-p', app_id, '-c', 'android.intent.category.LAUNCHER', '1'],
-        check=False,
-    )
-    time.sleep(0.75)
-    return run_command(
-        build_maestro_command('pick-media-cancel-post', device, platform, results),
-        results / 'junit.xml',
-        timeout,
-    )
-
-
 def run_kill_relaunch_suite(timeout, device, platform, results):
     app_id = 'app.capgo.photo.library'
     pre_status = run_command(
@@ -164,12 +137,7 @@ def build_maestro_command(scenario, device, platform, results):
 def run(timeout, scenario, device, platform='android', results_dir=None):
     if not 0 < timeout <= 600:
         raise ValueError('Maestro timeout must be between 0 and 600 seconds')
-    if scenario in {
-        'low-memory-mid-library',
-        'kill-relaunch-mid-library',
-        'pick-media-cancel',
-        'permission-denied',
-    }:
+    if scenario in {'low-memory-mid-library', 'kill-relaunch-mid-library', 'permission-denied'}:
         if platform not in {'android', 'ios'}:
             raise ValueError('Maestro platform must be android or ios')
         if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}', device):
@@ -186,14 +154,6 @@ def run(timeout, scenario, device, platform='android', results_dir=None):
             return run_low_memory_suite(timeout, device, platform, results)
         if scenario == 'kill-relaunch-mid-library':
             return run_kill_relaunch_suite(timeout, device, platform, results)
-        if scenario == 'pick-media-cancel' and platform == 'android':
-            return run_pick_media_cancel_suite(timeout, device, platform, results)
-        if scenario == 'pick-media-cancel':
-            return run_command(
-                build_maestro_command('pick-media-cancel', device, platform, results),
-                results / 'junit.xml',
-                timeout,
-            )
         if platform == 'ios':
             return run_command(
                 build_maestro_command('permission-denied', device, platform, results),
@@ -204,7 +164,6 @@ def run(timeout, scenario, device, platform='android', results_dir=None):
     if scenario not in FLOWS and scenario not in {
         'low-memory-mid-library',
         'kill-relaunch-mid-library',
-        'pick-media-cancel',
         'permission-denied',
     }:
         raise ValueError('Unknown Maestro E2E flow')
