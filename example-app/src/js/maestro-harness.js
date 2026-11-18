@@ -2,6 +2,7 @@ import { App } from '@capacitor/app';
 import { PhotoLibrary } from '@capgo/capacitor-photo-library';
 
 const storagePrefix = '__capgo_photo_maestro_';
+let activeFlowGeneration = 0;
 
 function requireElement(id) {
   const element = document.getElementById(id);
@@ -100,6 +101,10 @@ const flows = {
     if (auth.state === 'authorized') {
       throw new Error('expected denied or limited, not full authorized');
     }
+    if (auth.state === 'notDetermined') {
+      setMarker('permission-denied', true, 'notDetermined');
+      return;
+    }
     try {
       await PhotoLibrary.getLibrary({ limit: 1 });
       throw new Error('getLibrary should fail when access is denied');
@@ -111,6 +116,7 @@ const flows = {
 
   async 'pick-media-cancel'() {
     setSummary('PHASE:pick-media-cancel:opening');
+    await sleep(750);
     const result = await PhotoLibrary.pickMedia({ selectionLimit: 1, includeImages: true, includeVideos: false });
     if (result.assets.length !== 0) {
       throw new Error(`expected empty pick result on cancel, got ${result.assets.length}`);
@@ -119,6 +125,7 @@ const flows = {
   },
 
   async 'kill-relaunch-mid-library'() {
+    const generation = ++activeFlowGeneration;
     persistPending('kill-relaunch-mid-library', { resume: true });
     setSummary('PHASE:kill-relaunch-mid-library:fetching');
     void PhotoLibrary.getLibrary({
@@ -128,19 +135,30 @@ const flows = {
       thumbnailHeight: 384,
     })
       .then(async (lib) => {
+        if (generation !== activeFlowGeneration) {
+          return;
+        }
         if (lib.assets.length < 1) {
           throw new Error('library fetch returned no assets');
+        }
+        if (readPending()?.flowId === 'kill-relaunch-mid-library') {
+          setSummary(`STATE:kill-relaunch-mid-library:fetched:${lib.assets.length}`);
+          return;
         }
         clearPending();
         setMarker('kill-relaunch-mid-library', true, `assets=${lib.assets.length}`);
       })
       .catch((error) => {
+        if (generation !== activeFlowGeneration) {
+          return;
+        }
         setMarker('kill-relaunch-mid-library', false, String(error?.message ?? error));
       });
     await sleep(2_500);
   },
 
   async 'low-memory-mid-library'() {
+    const generation = ++activeFlowGeneration;
     persistPending('low-memory-mid-library', { resume: true });
     setSummary('PHASE:low-memory-mid-library:fetching');
     void PhotoLibrary.getLibrary({
@@ -150,13 +168,23 @@ const flows = {
       thumbnailHeight: 384,
     })
       .then(async (lib) => {
+        if (generation !== activeFlowGeneration) {
+          return;
+        }
         if (lib.assets.length < 1) {
           throw new Error('library fetch returned no assets');
+        }
+        if (readPending()?.flowId === 'low-memory-mid-library') {
+          setSummary(`STATE:low-memory-mid-library:fetched:${lib.assets.length}`);
+          return;
         }
         clearPending();
         setMarker('low-memory-mid-library', true, `assets=${lib.assets.length}`);
       })
       .catch((error) => {
+        if (generation !== activeFlowGeneration) {
+          return;
+        }
         setMarker('low-memory-mid-library', false, String(error?.message ?? error));
       });
     await sleep(2_500);
@@ -169,8 +197,14 @@ async function resumePendingFlowIfNeeded() {
     return;
   }
   const { flowId } = pending;
+  activeFlowGeneration += 1;
   try {
-    await assertLibraryHasSeededMedia();
+    const auth = await PhotoLibrary.checkAuthorization();
+    setSummary(`AUTH:resume:${auth.state}`);
+    const lib = await PhotoLibrary.getLibrary({ limit: 4, thumbnailWidth: 128, thumbnailHeight: 128 });
+    if (lib.totalCount < 1) {
+      throw new Error('library empty after relaunch');
+    }
     clearPending();
     setMarker(flowId, true, 'resumed');
   } catch (error) {
@@ -179,6 +213,7 @@ async function resumePendingFlowIfNeeded() {
 }
 
 async function runFlow(flowId) {
+  setSummary(`EVENT:RUN:${flowId}`);
   appendLog(`RUN:${flowId}`);
   const runner = flows[flowId];
   if (!runner) {

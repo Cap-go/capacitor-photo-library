@@ -3,23 +3,31 @@ appId: app.capgo.photo.library
 - runFlow: ../helpers/launch-harness.yaml
 - scrollUntilVisible:
     element:
-      text: low-memory-mid-library
+      id: e2e-flow-low-memory-mid-library
     direction: DOWN
     timeout: 45000
     centerElement: true
 - tapOn:
-    text: low-memory-mid-library
+    id: e2e-flow-low-memory-mid-library
     retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: '.*EVENT:RUN:low-memory-mid-library.*'
+    timeout: 45000
 - extendedWaitUntil:
     visible: '.*PHASE:low-memory-mid-library:fetching.*'
     timeout: 45000
 - runScript:
     file: ../../scripts/maestro/memory-pressure.sh
+- runScript:
+    file: ../../scripts/maestro/wait-seconds.sh
 - stopApp
 - launchApp:
     clearState: false
     arguments:
       isE2E: true
+- extendedWaitUntil:
+    visible: '.*Harness: ready.*'
+    timeout: 90000
 - extendedWaitUntil:
     visible: '.*Marker: low-memory-mid-library:success.*'
     timeout: 120000
