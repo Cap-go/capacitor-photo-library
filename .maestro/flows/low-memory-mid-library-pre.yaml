@@ -8,6 +8,9 @@ appId: app.capgo.photo.library
       capgoMaestroFlow: low-memory-mid-library
 - extendedWaitUntil:
     visible: '.*Harness: ready.*'
+- tapOn:
+    text: low-memory-mid-library
+    optional: true
     timeout: 90000
 - extendedWaitUntil:
     visible: '.*PHASE:low-memory-mid-library:fetching.*'

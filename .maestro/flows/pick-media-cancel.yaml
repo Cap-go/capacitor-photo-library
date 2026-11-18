@@ -9,6 +9,9 @@ appId: app.capgo.photo.library
 - extendedWaitUntil:
     visible: '.*Harness: ready.*'
     timeout: 90000
+- tapOn:
+    text: pick-media-cancel
+    optional: true
 - extendedWaitUntil:
     visible: '.*EVENT:RUN:pick-media-cancel.*'
     timeout: 120000

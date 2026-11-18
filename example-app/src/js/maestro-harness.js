@@ -3,6 +3,7 @@ import { PhotoLibrary } from '@capgo/capacitor-photo-library';
 
 const storagePrefix = '__capgo_photo_maestro_';
 let activeFlowGeneration = 0;
+let autoFlowStarted = false;
 
 function requireElement(id) {
   const element = document.getElementById(id);
@@ -268,6 +269,15 @@ export async function initMaestroHarness() {
   if (!resumed) {
     await runAutoFlowIfRequested();
   }
+  window.addEventListener(
+    'capgo-maestro-autoflow',
+    () => {
+      if (!readPending()) {
+        void runAutoFlowIfRequested();
+      }
+    },
+    { once: true },
+  );
 
   App.addListener('appStateChange', (state) => {
     appendLog(`APP:${state.isActive ? 'active' : 'background'}`);
