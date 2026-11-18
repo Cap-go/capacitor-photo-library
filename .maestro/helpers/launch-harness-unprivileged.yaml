@@ -1,0 +1,12 @@
+appId: app.capgo.photo.library
+---
+- stopApp
+- launchApp:
+    clearState: true
+    arguments:
+      isE2E: true
+    permissions:
+      all: deny
+- extendedWaitUntil:
+    visible: '.*Harness: ready.*'
+    timeout: 90000
