@@ -1,5 +1,12 @@
 appId: app.capgo.photo.library
 ---
+- launchApp:
+    clearState: false
+    arguments:
+      isE2E: true
+- extendedWaitUntil:
+    visible: '.*Harness: ready.*'
+    timeout: 90000
 - scrollUntilVisible:
     element:
       id: e2e-flow-permission-denied
