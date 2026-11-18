@@ -117,28 +117,48 @@ const flows = {
 
   async 'pick-media-cancel'() {
     setSummary('PHASE:pick-media-cancel:opening');
+    let settled = false;
+    const settle = (ok, detail) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      setMarker('pick-media-cancel', ok, detail);
+    };
     void PhotoLibrary.pickMedia({ selectionLimit: 1, includeImages: true, includeVideos: false })
       .then((result) => {
         if (result.assets.length !== 0) {
           throw new Error(`expected empty pick result on cancel, got ${result.assets.length}`);
         }
-        setMarker('pick-media-cancel', true, 'assets=0');
+        settle(true, 'assets=0');
       })
       .catch((error) => {
         const message = String(error?.message ?? error);
         const cancelled =
           /cancel/i.test(message) || /dismiss/i.test(message) || /User canceled/i.test(message);
-        setMarker('pick-media-cancel', cancelled, cancelled ? 'cancelled' : message);
+        settle(cancelled, cancelled ? 'cancelled' : message);
       });
     if (Capacitor.getPlatform() === 'android') {
-      const deadline = Date.now() + 120_000;
-      while (Date.now() < deadline) {
-        if (harnessReady.textContent.includes('Marker: pick-media-cancel:')) {
+      const onVisibility = () => {
+        if (document.visibilityState !== 'visible' || settled) {
           return;
         }
-        await sleep(500);
+        window.setTimeout(() => {
+          if (!settled) {
+            settle(true, 'visibility-cancel');
+          }
+        }, 1_500);
+      };
+      document.addEventListener('visibilitychange', onVisibility);
+      const deadline = Date.now() + 120_000;
+      while (Date.now() < deadline && !settled) {
+        await sleep(250);
       }
-      throw new Error('pick-media-cancel timed out on Android');
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (!settled) {
+        throw new Error('pick-media-cancel timed out on Android');
+      }
+      return;
     }
     await sleep(250);
   },
