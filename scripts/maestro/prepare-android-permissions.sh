@@ -26,6 +26,9 @@ if [[ "$FLOW_ID" == "permission-grant-library" || "$FLOW_ID" == "permission-chec
   exit 0
 fi
 
-adb shell pm grant "$APP_ID" android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1 || true
+sdk="$(adb shell getprop ro.build.version.sdk 2>/dev/null | tr -d '\r' || echo 0)"
+if [[ "$sdk" -le 32 ]]; then
+  adb shell pm grant "$APP_ID" android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1 || true
+fi
 adb shell pm grant "$APP_ID" android.permission.READ_MEDIA_IMAGES >/dev/null 2>&1 || true
 adb shell pm grant "$APP_ID" android.permission.READ_MEDIA_VIDEO >/dev/null 2>&1 || true

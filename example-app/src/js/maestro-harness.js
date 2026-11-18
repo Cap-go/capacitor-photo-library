@@ -215,7 +215,6 @@ async function resumePendingFlowIfNeeded() {
 }
 
 async function runFlow(flowId) {
-  setSummary(`EVENT:RUN:${flowId}`);
   appendLog(`RUN:${flowId}`);
   const runner = flows[flowId];
   if (!runner) {
@@ -233,12 +232,11 @@ function installFlowButtons() {
     button.id = `e2e-flow-${flowId}`;
     button.setAttribute('data-testid', `e2e-flow-${flowId}`);
     button.textContent = flowId;
-    button.addEventListener('click', async () => {
-      try {
-        await runFlow(flowId);
-      } catch (error) {
+    button.addEventListener('click', () => {
+      setSummary(`EVENT:RUN:${flowId}`);
+      void runFlow(flowId).catch((error) => {
         setMarker(flowId, false, String(error?.message ?? error));
-      }
+      });
     });
     flowButtons.appendChild(button);
   }
