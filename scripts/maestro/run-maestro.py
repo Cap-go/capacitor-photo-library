@@ -74,9 +74,16 @@ def run_pick_media_cancel_suite(timeout, device, platform, results):
     )
     if pre_status != 0:
         return pre_status
-    dismiss = subprocess.run(['adb', 'shell', 'input', 'keyevent', '4'], check=False)
-    if dismiss.returncode != 0:
-        return dismiss.returncode
+    app_id = 'app.capgo.photo.library'
+    for _ in range(2):
+        dismiss = subprocess.run(['adb', 'shell', 'input', 'keyevent', '4'], check=False)
+        if dismiss.returncode != 0:
+            return dismiss.returncode
+        time.sleep(0.35)
+    subprocess.run(
+        ['adb', 'shell', 'monkey', '-p', app_id, '-c', 'android.intent.category.LAUNCHER', '1'],
+        check=False,
+    )
     time.sleep(0.75)
     return run_command(
         build_maestro_command('pick-media-cancel-post', device, platform, results),

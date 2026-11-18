@@ -1,4 +1,5 @@
 import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { PhotoLibrary } from '@capgo/capacitor-photo-library';
 
 const storagePrefix = '__capgo_photo_maestro_';
@@ -129,6 +130,16 @@ const flows = {
           /cancel/i.test(message) || /dismiss/i.test(message) || /User canceled/i.test(message);
         setMarker('pick-media-cancel', cancelled, cancelled ? 'cancelled' : message);
       });
+    if (Capacitor.getPlatform() === 'android') {
+      const deadline = Date.now() + 120_000;
+      while (Date.now() < deadline) {
+        if (harnessReady.textContent.includes('Marker: pick-media-cancel:')) {
+          return;
+        }
+        await sleep(500);
+      }
+      throw new Error('pick-media-cancel timed out on Android');
+    }
     await sleep(250);
   },
 
