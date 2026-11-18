@@ -10,7 +10,6 @@ if ! command -v adb >/dev/null 2>&1; then
 fi
 
 if [[ "$FLOW_ID" == "permission-denied" ]]; then
-  adb shell pm clear "$APP_ID" >/dev/null 2>&1 || true
   adb shell pm revoke "$APP_ID" android.permission.READ_MEDIA_IMAGES >/dev/null 2>&1 || true
   adb shell pm revoke "$APP_ID" android.permission.READ_MEDIA_VIDEO >/dev/null 2>&1 || true
   adb shell pm revoke "$APP_ID" android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1 || true

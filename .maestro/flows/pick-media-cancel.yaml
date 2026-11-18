@@ -27,6 +27,7 @@ appId: app.capgo.photo.library
     optional: true
 - pressKey: Back
 - pressKey: Back
+- pressKey: Back
 - extendedWaitUntil:
     visible: '.*Marker: pick-media-cancel:success.*'
     timeout: 120000

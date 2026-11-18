@@ -34,7 +34,32 @@ FLOWS = {
     'kill-relaunch-mid-library': ROOT / '.maestro/flows/kill-relaunch-mid-library.yaml',
     'low-memory-mid-library-pre': ROOT / '.maestro/flows/low-memory-mid-library-pre.yaml',
     'low-memory-mid-library-post': ROOT / '.maestro/flows/low-memory-mid-library-post.yaml',
+    'permission-denied-boot': ROOT / '.maestro/flows/permission-denied-boot.yaml',
+    'permission-denied-assert': ROOT / '.maestro/flows/permission-denied-assert.yaml',
 }
+
+
+def run_permission_denied_suite(timeout, device, platform, results):
+    boot_status = run_command(
+        build_maestro_command('permission-denied-boot', device, platform, results),
+        results / 'junit.xml',
+        timeout,
+    )
+    if boot_status != 0:
+        return boot_status
+    app_id = 'app.capgo.photo.library'
+    prep = subprocess.run(
+        ['bash', str(ROOT / 'scripts/maestro/prepare-android-permissions.sh'), app_id, 'permission-denied'],
+        cwd=ROOT,
+        check=False,
+    )
+    if prep.returncode != 0:
+        return prep.returncode
+    return run_command(
+        build_maestro_command('permission-denied-assert', device, platform, results),
+        results / 'junit.xml',
+        timeout,
+    )
 
 
 def run_low_memory_suite(timeout, device, platform, results):
@@ -82,7 +107,7 @@ def build_maestro_command(scenario, device, platform, results):
 def run(timeout, scenario, device, platform='android', results_dir=None):
     if not 0 < timeout <= 600:
         raise ValueError('Maestro timeout must be between 0 and 600 seconds')
-    if scenario == 'low-memory-mid-library':
+    if scenario in {'low-memory-mid-library', 'permission-denied'}:
         if platform not in {'android', 'ios'}:
             raise ValueError('Maestro platform must be android or ios')
         if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}', device):
@@ -95,8 +120,16 @@ def run(timeout, scenario, device, platform='android', results_dir=None):
             os.remove(results / 'junit.xml')
         except FileNotFoundError:
             pass
-        return run_low_memory_suite(timeout, device, platform, results)
-    if scenario not in FLOWS and scenario != 'low-memory-mid-library':
+        if scenario == 'low-memory-mid-library':
+            return run_low_memory_suite(timeout, device, platform, results)
+        if platform == 'ios':
+            return run_command(
+                build_maestro_command('permission-denied', device, platform, results),
+                results / 'junit.xml',
+                timeout,
+            )
+        return run_permission_denied_suite(timeout, device, platform, results)
+    if scenario not in FLOWS and scenario not in {'low-memory-mid-library', 'permission-denied'}:
         raise ValueError('Unknown Maestro E2E flow')
     if platform not in {'android', 'ios'}:
         raise ValueError('Maestro platform must be android or ios')

@@ -201,7 +201,11 @@ async function resumePendingFlowIfNeeded() {
   try {
     const auth = await PhotoLibrary.checkAuthorization();
     setSummary(`AUTH:resume:${auth.state}`);
-    const lib = await PhotoLibrary.getLibrary({ limit: 4, thumbnailWidth: 128, thumbnailHeight: 128 });
+    let lib = await PhotoLibrary.getLibrary({ limit: 4, thumbnailWidth: 128, thumbnailHeight: 128 });
+    for (let attempt = 0; attempt < 12 && lib.totalCount < 1; attempt += 1) {
+      await sleep(500);
+      lib = await PhotoLibrary.getLibrary({ limit: 4, thumbnailWidth: 128, thumbnailHeight: 128 });
+    }
     if (lib.totalCount < 1) {
       throw new Error('library empty after relaunch');
     }
