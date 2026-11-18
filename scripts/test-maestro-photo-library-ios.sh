@@ -25,7 +25,7 @@ fi
 
 if [[ ! -f "$FLOW_PATH" ]]; then
   case "$FLOW_ID" in
-    low-memory-mid-library|kill-relaunch-mid-library|pick-media-cancel|permission-denied)
+    low-memory-mid-library|kill-relaunch-mid-library|pick-media-cancel)
       ;;
     *)
       echo "Missing flow at $FLOW_PATH" >&2
@@ -56,6 +56,7 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
   if (( attempt > 1 )); then
     xcrun simctl uninstall "$SIMULATOR_ID" "$APP_ID" >/dev/null 2>&1 || true
     xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
+    bash "$ROOT_DIR/scripts/maestro/prepare-ios-permissions.sh" "$APP_ID" "$SIMULATOR_ID" "$FLOW_ID"
     sleep "$LIGHT_RETRY_SLEEP_SECONDS"
   fi
   if python3 "$ROOT_DIR/scripts/maestro/run-maestro.py" \

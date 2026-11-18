@@ -52,13 +52,33 @@ def remove_report(report):
         pass
 
 
+def remaining_timeout(deadline, minimum=30):
+    left = deadline - time.monotonic()
+    if left < minimum:
+        return 0
+    return left
+
+
+def prep_env(device, platform):
+    env = os.environ.copy()
+    if platform == 'android':
+        env['ANDROID_SERIAL'] = device
+    else:
+        env['CAPGO_MAESTRO_IOS_SIMULATOR_ID'] = device
+    return env
+
+
 def run_permission_denied_suite(timeout, device, platform, results):
+    deadline = time.monotonic() + timeout - 5
     boot_report = results / 'permission-denied-boot.xml'
     remove_report(boot_report)
+    boot_budget = remaining_timeout(deadline)
+    if not boot_budget:
+        return 124
     boot_status = run_command(
         build_maestro_command('permission-denied-boot', device, platform, results, boot_report),
         boot_report,
-        timeout,
+        boot_budget,
     )
     if boot_status != 0:
         return boot_status
@@ -67,31 +87,39 @@ def run_permission_denied_suite(timeout, device, platform, results):
         ['bash', str(ROOT / 'scripts/maestro/prepare-android-permissions.sh'), app_id, 'permission-denied'],
         cwd=ROOT,
         check=False,
+        env=prep_env(device, platform),
     )
     if prep.returncode != 0:
         return prep.returncode
     assert_report = results / 'permission-denied-assert.xml'
     remove_report(assert_report)
+    assert_budget = remaining_timeout(deadline)
+    if not assert_budget:
+        return 124
     return run_command(
         build_maestro_command('permission-denied-assert', device, platform, results, assert_report),
         assert_report,
-        timeout,
+        assert_budget,
     )
 
 
 def run_kill_relaunch_suite(timeout, device, platform, results):
+    deadline = time.monotonic() + timeout - 5
     app_id = 'app.capgo.photo.library'
     pre_report = results / 'kill-relaunch-mid-library-pre.xml'
     remove_report(pre_report)
+    pre_budget = remaining_timeout(deadline)
+    if not pre_budget:
+        return 124
     pre_status = run_command(
         build_maestro_command('kill-relaunch-mid-library-pre', device, platform, results, pre_report),
         pre_report,
-        timeout,
+        pre_budget,
     )
     if pre_status != 0:
         return pre_status
     if platform == 'android':
-        stop = subprocess.run(['adb', 'shell', 'am', 'force-stop', app_id], check=False)
+        stop = subprocess.run(['adb', '-s', device, 'shell', 'am', 'force-stop', app_id], check=False)
         if stop.returncode != 0:
             return stop.returncode
     else:
@@ -100,33 +128,41 @@ def run_kill_relaunch_suite(timeout, device, platform, results):
             return stop.returncode
     post_report = results / 'kill-relaunch-mid-library-post.xml'
     remove_report(post_report)
+    post_budget = remaining_timeout(deadline)
+    if not post_budget:
+        return 124
     return run_command(
         build_maestro_command('kill-relaunch-mid-library-post', device, platform, results, post_report),
         post_report,
-        timeout,
+        post_budget,
     )
 
 
 def run_low_memory_suite(timeout, device, platform, results):
+    deadline = time.monotonic() + timeout - 5
     app_id = 'app.capgo.photo.library'
     pre_report = results / 'low-memory-mid-library-pre.xml'
     remove_report(pre_report)
+    pre_budget = remaining_timeout(deadline)
+    if not pre_budget:
+        return 124
     pre_status = run_command(
         build_maestro_command('low-memory-mid-library-pre', device, platform, results, pre_report),
         pre_report,
-        timeout,
+        pre_budget,
     )
     if pre_status != 0:
         return pre_status
     pressure = subprocess.run(
-        ['bash', str(ROOT / 'scripts/maestro/memory-pressure.sh')],
+        ['bash', str(ROOT / 'scripts/maestro/memory-pressure.sh'), platform, device],
         cwd=ROOT,
         check=False,
+        env=prep_env(device, platform),
     )
     if pressure.returncode != 0:
         return pressure.returncode
     if platform == 'android':
-        stop = subprocess.run(['adb', 'shell', 'am', 'force-stop', app_id], check=False)
+        stop = subprocess.run(['adb', '-s', device, 'shell', 'am', 'force-stop', app_id], check=False)
         if stop.returncode != 0:
             return stop.returncode
     else:
@@ -135,10 +171,13 @@ def run_low_memory_suite(timeout, device, platform, results):
             return stop.returncode
     post_report = results / 'low-memory-mid-library-post.xml'
     remove_report(post_report)
+    post_budget = remaining_timeout(deadline)
+    if not post_budget:
+        return 124
     return run_command(
         build_maestro_command('low-memory-mid-library-post', device, platform, results, post_report),
         post_report,
-        timeout,
+        post_budget,
     )
 
 

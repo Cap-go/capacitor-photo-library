@@ -251,15 +251,27 @@ async function resumePendingFlowIfNeeded() {
   }
   const { flowId } = pending;
   activeFlowGeneration += 1;
-  try {
-    const auth = await PhotoLibrary.checkAuthorization();
-    setSummary(`AUTH:resume:${auth.state}`);
-    await PhotoLibrary.getLibrary({ limit: 4, thumbnailWidth: 128, thumbnailHeight: 128 });
-    clearPending();
-    setMarker(flowId, true, 'resumed');
-  } catch (error) {
-    setMarker(flowId, false, String(error?.message ?? error));
+  const auth = await PhotoLibrary.checkAuthorization();
+  setSummary(`AUTH:resume:${auth.state}`);
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    try {
+      const lib = await PhotoLibrary.getLibrary({
+        limit: 4,
+        thumbnailWidth: 128,
+        thumbnailHeight: 128,
+      });
+      if (lib.totalCount >= 1 && lib.assets.length >= 1) {
+        clearPending();
+        setMarker(flowId, true, 'resumed');
+        return true;
+      }
+    } catch {
+      // Retry until deadline when the library is still warming up.
+    }
+    await sleep(500);
   }
+  setMarker(flowId, false, 'resume returned no assets');
   return true;
 }
 
