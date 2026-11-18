@@ -5,6 +5,8 @@ appId: app.capgo.photo.library
     arguments:
       isE2E: true
       capgoMaestroFlow: permission-denied
+    permissions:
+      photos: deny
 - extendedWaitUntil:
     visible: '.*Harness: ready.*'
     timeout: 90000

@@ -45,10 +45,19 @@ FLOWS = {
 }
 
 
+def remove_report(report):
+    try:
+        os.remove(report)
+    except FileNotFoundError:
+        pass
+
+
 def run_permission_denied_suite(timeout, device, platform, results):
+    boot_report = results / 'permission-denied-boot.xml'
+    remove_report(boot_report)
     boot_status = run_command(
-        build_maestro_command('permission-denied-boot', device, platform, results),
-        results / 'junit.xml',
+        build_maestro_command('permission-denied-boot', device, platform, results, boot_report),
+        boot_report,
         timeout,
     )
     if boot_status != 0:
@@ -61,18 +70,22 @@ def run_permission_denied_suite(timeout, device, platform, results):
     )
     if prep.returncode != 0:
         return prep.returncode
+    assert_report = results / 'permission-denied-assert.xml'
+    remove_report(assert_report)
     return run_command(
-        build_maestro_command('permission-denied-assert', device, platform, results),
-        results / 'junit.xml',
+        build_maestro_command('permission-denied-assert', device, platform, results, assert_report),
+        assert_report,
         timeout,
     )
 
 
 def run_kill_relaunch_suite(timeout, device, platform, results):
     app_id = 'app.capgo.photo.library'
+    pre_report = results / 'kill-relaunch-mid-library-pre.xml'
+    remove_report(pre_report)
     pre_status = run_command(
-        build_maestro_command('kill-relaunch-mid-library-pre', device, platform, results),
-        results / 'junit.xml',
+        build_maestro_command('kill-relaunch-mid-library-pre', device, platform, results, pre_report),
+        pre_report,
         timeout,
     )
     if pre_status != 0:
@@ -85,18 +98,22 @@ def run_kill_relaunch_suite(timeout, device, platform, results):
         stop = subprocess.run(['xcrun', 'simctl', 'terminate', device, app_id], check=False)
         if stop.returncode not in (0, 3):
             return stop.returncode
+    post_report = results / 'kill-relaunch-mid-library-post.xml'
+    remove_report(post_report)
     return run_command(
-        build_maestro_command('kill-relaunch-mid-library-post', device, platform, results),
-        results / 'junit.xml',
+        build_maestro_command('kill-relaunch-mid-library-post', device, platform, results, post_report),
+        post_report,
         timeout,
     )
 
 
 def run_low_memory_suite(timeout, device, platform, results):
     app_id = 'app.capgo.photo.library'
+    pre_report = results / 'low-memory-mid-library-pre.xml'
+    remove_report(pre_report)
     pre_status = run_command(
-        build_maestro_command('low-memory-mid-library-pre', device, platform, results),
-        results / 'junit.xml',
+        build_maestro_command('low-memory-mid-library-pre', device, platform, results, pre_report),
+        pre_report,
         timeout,
     )
     if pre_status != 0:
@@ -116,15 +133,16 @@ def run_low_memory_suite(timeout, device, platform, results):
         stop = subprocess.run(['xcrun', 'simctl', 'terminate', device, app_id], check=False)
         if stop.returncode not in (0, 3):
             return stop.returncode
+    post_report = results / 'low-memory-mid-library-post.xml'
+    remove_report(post_report)
     return run_command(
-        build_maestro_command('low-memory-mid-library-post', device, platform, results),
-        results / 'junit.xml',
+        build_maestro_command('low-memory-mid-library-post', device, platform, results, post_report),
+        post_report,
         timeout,
     )
 
 
-def build_maestro_command(scenario, device, platform, results):
-  report = results / 'junit.xml'
+def build_maestro_command(scenario, device, platform, results, report):
   return [
     'maestro', 'test', '--config', str(ROOT / '.maestro/config.yaml'), str(FLOWS[scenario]),
     '--platform', platform, '--udid', device,
@@ -146,18 +164,16 @@ def run(timeout, scenario, device, platform='android', results_dir=None):
             'maestro-results-ios' if platform == 'ios' else 'maestro-results'
         )
         results.mkdir(exist_ok=True)
-        try:
-            os.remove(results / 'junit.xml')
-        except FileNotFoundError:
-            pass
         if scenario == 'low-memory-mid-library':
             return run_low_memory_suite(timeout, device, platform, results)
         if scenario == 'kill-relaunch-mid-library':
             return run_kill_relaunch_suite(timeout, device, platform, results)
         if platform == 'ios':
+            report = results / 'junit.xml'
+            remove_report(report)
             return run_command(
-                build_maestro_command('permission-denied', device, platform, results),
-                results / 'junit.xml',
+                build_maestro_command('permission-denied', device, platform, results, report),
+                report,
                 timeout,
             )
         return run_permission_denied_suite(timeout, device, platform, results)
@@ -176,12 +192,8 @@ def run(timeout, scenario, device, platform='android', results_dir=None):
     )
     results.mkdir(exist_ok=True)
     report = results / 'junit.xml'
-    command = build_maestro_command(scenario, device, platform, results)
-    # A report from an earlier attempt must never authorize success.
-    try:
-        os.remove(report)
-    except FileNotFoundError:
-        pass
+    remove_report(report)
+    command = build_maestro_command(scenario, device, platform, results, report)
     return run_command(command, report, timeout)
 
 

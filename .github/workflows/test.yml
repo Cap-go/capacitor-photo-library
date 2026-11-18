@@ -346,14 +346,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           conclusions=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" --paginate \
-            --jq '[.jobs[] | select(.name | startswith("Maestro E2E Android / ")) | .conclusion]')
+            --jq '[.jobs[] | select(.name | contains("Maestro E2E Android / ")) | .conclusion]')
           echo "$conclusions"
-          if echo "$conclusions" | jq -e 'map(select(. == "failure")) | length > 0' >/dev/null; then
-            echo "One or more Android Maestro flows failed."
+          count=$(echo "$conclusions" | jq 'length')
+          success=$(echo "$conclusions" | jq '[.[] | select(. == "success")] | length')
+          if [[ "$count" -ne 6 ]]; then
+            echo "Expected 6 Android Maestro flow jobs, found ${count}."
             exit 1
           fi
-          if echo "$conclusions" | jq -e 'map(select(. == "cancelled")) | length > 0' >/dev/null; then
-            echo "Some Android Maestro flows were cancelled (timeout or workflow cancellation). Not counted as flow failures."
+          if [[ "$success" -ne 6 ]]; then
+            echo "One or more Android Maestro flows did not succeed (${success}/6 success)."
+            exit 1
           fi
 
   maestro_e2e_ios_gate:
@@ -371,12 +374,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           conclusions=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" --paginate \
-            --jq '[.jobs[] | select(.name | startswith("Maestro E2E iOS / ")) | .conclusion]')
+            --jq '[.jobs[] | select(.name | contains("Maestro E2E iOS / ")) | .conclusion]')
           echo "$conclusions"
-          if echo "$conclusions" | jq -e 'map(select(. == "failure")) | length > 0' >/dev/null; then
-            echo "One or more iOS Maestro flows failed."
+          count=$(echo "$conclusions" | jq 'length')
+          success=$(echo "$conclusions" | jq '[.[] | select(. == "success")] | length')
+          if [[ "$count" -ne 6 ]]; then
+            echo "Expected 6 iOS Maestro flow jobs, found ${count}."
             exit 1
           fi
-          if echo "$conclusions" | jq -e 'map(select(. == "cancelled")) | length > 0' >/dev/null; then
-            echo "Some iOS Maestro flows were cancelled (timeout or workflow cancellation). Not counted as flow failures."
+          if [[ "$success" -ne 6 ]]; then
+            echo "One or more iOS Maestro flows did not succeed (${success}/6 success)."
+            exit 1
           fi

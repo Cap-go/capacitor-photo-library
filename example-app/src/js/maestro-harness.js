@@ -100,15 +100,22 @@ const flows = {
     const auth = await PhotoLibrary.checkAuthorization();
     setSummary(`AUTH:${auth.state}`);
     if (auth.state === 'notDetermined') {
-      setMarker('permission-denied', true, 'notDetermined');
+      setMarker('permission-denied', false, 'notDetermined');
+      return;
+    }
+    if (auth.state === 'authorized' || auth.state === 'limited') {
+      try {
+        await PhotoLibrary.getLibrary({ limit: 1 });
+        setMarker('permission-denied', false, 'getLibrary succeeded while authorized');
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        setMarker('permission-denied', false, `authorized but getLibrary failed: ${message}`);
+      }
       return;
     }
     try {
       await PhotoLibrary.getLibrary({ limit: 1 });
-      if (auth.state === 'authorized' || auth.state === 'limited') {
-        throw new Error('getLibrary succeeded while testing denial');
-      }
-      setMarker('permission-denied', true, `state=${auth.state}`);
+      setMarker('permission-denied', false, 'getLibrary succeeded while denied');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setMarker('permission-denied', true, message);

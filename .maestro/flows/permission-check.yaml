@@ -1,6 +1,6 @@
 appId: app.capgo.photo.library
 ---
-- runFlow: ../helpers/launch-harness.yaml
+- runFlow: ../helpers/launch-harness-revoked.yaml
 - scrollUntilVisible:
     element:
       text: permission-check
