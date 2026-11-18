@@ -32,14 +32,71 @@ FLOWS = {
     'permission-denied': ROOT / '.maestro/flows/permission-denied.yaml',
     'pick-media-cancel': ROOT / '.maestro/flows/pick-media-cancel.yaml',
     'kill-relaunch-mid-library': ROOT / '.maestro/flows/kill-relaunch-mid-library.yaml',
-    'low-memory-mid-library': ROOT / '.maestro/flows/low-memory-mid-library.yaml',
+    'low-memory-mid-library-pre': ROOT / '.maestro/flows/low-memory-mid-library-pre.yaml',
+    'low-memory-mid-library-post': ROOT / '.maestro/flows/low-memory-mid-library-post.yaml',
 }
+
+
+def run_low_memory_suite(timeout, device, platform, results):
+    app_id = 'app.capgo.photo.library'
+    pre_status = run_command(
+        build_maestro_command('low-memory-mid-library-pre', device, platform, results),
+        results / 'junit.xml',
+        timeout,
+    )
+    if pre_status != 0:
+        return pre_status
+    pressure = subprocess.run(
+        ['bash', str(ROOT / 'scripts/maestro/memory-pressure.sh')],
+        cwd=ROOT,
+        check=False,
+    )
+    if pressure.returncode != 0:
+        return pressure.returncode
+    if platform == 'android':
+        stop = subprocess.run(['adb', 'shell', 'am', 'force-stop', app_id], check=False)
+        if stop.returncode != 0:
+            return stop.returncode
+    else:
+        stop = subprocess.run(['xcrun', 'simctl', 'terminate', device, app_id], check=False)
+        if stop.returncode != 0:
+            return stop.returncode
+    return run_command(
+        build_maestro_command('low-memory-mid-library-post', device, platform, results),
+        results / 'junit.xml',
+        timeout,
+    )
+
+
+def build_maestro_command(scenario, device, platform, results):
+  report = results / 'junit.xml'
+  return [
+    'maestro', 'test', '--config', str(ROOT / '.maestro/config.yaml'), str(FLOWS[scenario]),
+    '--platform', platform, '--udid', device,
+    '--format', 'junit', '--output', str(report),
+    '--debug-output', str(results / 'debug'), '--flatten-debug-output',
+    '--test-output-dir', str(results / 'artifacts'),
+  ]
 
 
 def run(timeout, scenario, device, platform='android', results_dir=None):
     if not 0 < timeout <= 600:
         raise ValueError('Maestro timeout must be between 0 and 600 seconds')
-    if scenario not in FLOWS:
+    if scenario == 'low-memory-mid-library':
+        if platform not in {'android', 'ios'}:
+            raise ValueError('Maestro platform must be android or ios')
+        if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}', device):
+            raise ValueError('Invalid device identifier')
+        results = Path(results_dir) if results_dir else ROOT / (
+            'maestro-results-ios' if platform == 'ios' else 'maestro-results'
+        )
+        results.mkdir(exist_ok=True)
+        try:
+            os.remove(results / 'junit.xml')
+        except FileNotFoundError:
+            pass
+        return run_low_memory_suite(timeout, device, platform, results)
+    if scenario not in FLOWS and scenario != 'low-memory-mid-library':
         raise ValueError('Unknown Maestro E2E flow')
     if platform not in {'android', 'ios'}:
         raise ValueError('Maestro platform must be android or ios')
@@ -50,13 +107,7 @@ def run(timeout, scenario, device, platform='android', results_dir=None):
     )
     results.mkdir(exist_ok=True)
     report = results / 'junit.xml'
-    command = [
-        'maestro', 'test', '--config', str(ROOT / '.maestro/config.yaml'), str(FLOWS[scenario]),
-        '--platform', platform, '--udid', device,
-        '--format', 'junit', '--output', str(report),
-        '--debug-output', str(results / 'debug'), '--flatten-debug-output',
-        '--test-output-dir', str(results / 'artifacts'),
-    ]
+    command = build_maestro_command(scenario, device, platform, results)
     # A report from an earlier attempt must never authorize success.
     try:
         os.remove(report)

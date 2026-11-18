@@ -16,8 +16,6 @@ appId: app.capgo.photo.library
 - extendedWaitUntil:
     visible: '.*PHASE:kill-relaunch-mid-library:fetching.*'
     timeout: 45000
-- runScript:
-    file: ../../scripts/maestro/wait-seconds.js
 - stopApp
 - launchApp:
     clearState: false

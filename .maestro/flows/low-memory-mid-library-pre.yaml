@@ -16,18 +16,3 @@ appId: app.capgo.photo.library
 - extendedWaitUntil:
     visible: '.*PHASE:low-memory-mid-library:fetching.*'
     timeout: 45000
-- runScript:
-    file: ../../scripts/maestro/run-memory-pressure.js
-- runScript:
-    file: ../../scripts/maestro/wait-seconds.js
-- stopApp
-- launchApp:
-    clearState: false
-    arguments:
-      isE2E: true
-- extendedWaitUntil:
-    visible: '.*Harness: ready.*'
-    timeout: 90000
-- extendedWaitUntil:
-    visible: '.*Marker: low-memory-mid-library:success.*'
-    timeout: 120000
