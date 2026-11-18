@@ -9,6 +9,9 @@ appId: app.capgo.photo.library
 - extendedWaitUntil:
     visible: '.*Harness: ready.*'
     timeout: 90000
+- tapOn:
+    text: permission-grant-library
+    optional: true
 - extendedWaitUntil:
     visible: '.*EVENT:RUN:permission-grant-library.*'
     timeout: 90000

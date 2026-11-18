@@ -8,10 +8,10 @@ appId: app.capgo.photo.library
       capgoMaestroFlow: kill-relaunch-mid-library
 - extendedWaitUntil:
     visible: '.*Harness: ready.*'
+    timeout: 90000
 - tapOn:
     text: kill-relaunch-mid-library
     optional: true
-    timeout: 90000
 - extendedWaitUntil:
     visible: '.*PHASE:kill-relaunch-mid-library:fetching.*'
     timeout: 90000
@@ -22,9 +22,6 @@ appId: app.capgo.photo.library
       isE2E: true
 - extendedWaitUntil:
     visible: '.*Harness: ready.*'
-- tapOn:
-    text: kill-relaunch-mid-library
-    optional: true
     timeout: 90000
 - extendedWaitUntil:
     visible: '.*Marker: kill-relaunch-mid-library:success.*'
