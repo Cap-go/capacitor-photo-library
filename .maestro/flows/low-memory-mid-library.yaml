@@ -14,7 +14,7 @@ appId: app.capgo.photo.library
     visible: '.*PHASE:low-memory-mid-library:fetching.*'
     timeout: 45000
 - runScript:
-    file: scripts/maestro/memory-pressure.sh
+    file: ../../scripts/maestro/memory-pressure.sh
 - stopApp
 - launchApp:
     clearState: false
