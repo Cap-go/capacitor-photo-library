@@ -83,6 +83,8 @@ def run_pick_media_cancel_suite(timeout, device, platform, results):
             'shell',
             'am',
             'start',
+            '-f',
+            '0x24000000',
             '-n',
             f'{app_id}/.MainActivity',
             '--es',
@@ -93,6 +95,7 @@ def run_pick_media_cancel_suite(timeout, device, platform, results):
     )
     if launch.returncode != 0:
         return launch.returncode
+    time.sleep(3)
     phase_status = run_command(
         build_maestro_command('pick-media-cancel-phase', device, platform, results),
         results / 'junit.xml',

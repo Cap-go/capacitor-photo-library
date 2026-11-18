@@ -42,13 +42,30 @@ public class MainActivity extends BridgeActivity {
         if (pendingMaestroFlow == null || getBridge() == null) {
             return;
         }
+        final String flow = pendingMaestroFlow;
         final String js =
-            "window.__capgoMaestroAutoFlow="
-                + JSONObject.quote(pendingMaestroFlow)
-                + ";window.dispatchEvent(new CustomEvent('capgoMaestroAutoFlow'));";
-        pendingMaestroFlow = null;
+            "(function(){var flow="
+                + JSONObject.quote(flow)
+                + ";var ticks=0;var timer=setInterval(function(){ticks+=1;"
+                + "var ready=document.getElementById('harness-ready');"
+                + "if(!ready||ready.textContent.indexOf('Harness: ready')<0){"
+                + "if(ticks>=120){clearInterval(timer);}return;}"
+                + "clearInterval(timer);window.__capgoMaestroAutoFlow=flow;"
+                + "window.dispatchEvent(new CustomEvent('capgoMaestroAutoFlow'));},250);})();";
         getBridge()
             .getWebView()
-            .post(() -> getBridge().getWebView().evaluateJavascript(js, null));
+            .post(
+                () ->
+                    getBridge()
+                        .getWebView()
+                        .evaluateJavascript(
+                            js,
+                            value -> {
+                                if (flow.equals(pendingMaestroFlow)) {
+                                    pendingMaestroFlow = null;
+                                }
+                            }
+                        )
+            );
     }
 }
