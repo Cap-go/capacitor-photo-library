@@ -74,6 +74,7 @@ def run_pick_media_cancel_suite(timeout, device, platform, results):
     )
     if pre_status != 0:
         return pre_status
+    time.sleep(2)
     app_id = 'app.capgo.photo.library'
     for _ in range(2):
         dismiss = subprocess.run(['adb', 'shell', 'input', 'keyevent', '4'], check=False)

@@ -139,22 +139,29 @@ const flows = {
         settle(cancelled, cancelled ? 'cancelled' : message);
       });
     if (Capacitor.getPlatform() === 'android') {
-      const onVisibility = () => {
-        if (document.visibilityState !== 'visible' || settled) {
+      let sawBackground = false;
+      const resumeHandle = await App.addListener('appStateChange', (state) => {
+        if (settled) {
+          return;
+        }
+        if (!state.isActive) {
+          sawBackground = true;
+          return;
+        }
+        if (!sawBackground) {
           return;
         }
         window.setTimeout(() => {
           if (!settled) {
-            settle(true, 'visibility-cancel');
+            settle(true, 'resume-after-picker');
           }
-        }, 1_500);
-      };
-      document.addEventListener('visibilitychange', onVisibility);
+        }, 750);
+      });
       const deadline = Date.now() + 120_000;
       while (Date.now() < deadline && !settled) {
         await sleep(250);
       }
-      document.removeEventListener('visibilitychange', onVisibility);
+      await resumeHandle.remove();
       if (!settled) {
         throw new Error('pick-media-cancel timed out on Android');
       }
