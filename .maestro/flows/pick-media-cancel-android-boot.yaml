@@ -1,3 +1,14 @@
 appId: app.capgo.photo.library
 ---
-- runFlow: ../helpers/launch-harness.yaml
+- stopApp
+- launchApp:
+    clearState: true
+    arguments:
+      isE2E: true
+      capgoMaestroFlow: pick-media-cancel
+- extendedWaitUntil:
+    visible: '.*Harness: ready.*'
+    timeout: 90000
+- extendedWaitUntil:
+    visible: '.*PHASE:pick-media-cancel:opening.*'
+    timeout: 120000

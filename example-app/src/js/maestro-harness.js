@@ -275,6 +275,14 @@ async function tryAutoFlow() {
   await runFlow(flowId);
 }
 
+function readLaunchAutoFlow() {
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get('capgoMaestroFlow');
+  if (fromQuery) {
+    window.__capgoMaestroAutoFlow = fromQuery;
+  }
+}
+
 function installFlowButtons() {
   const flowIds = Object.keys(flows);
   flowButtons.innerHTML = '';
@@ -298,6 +306,7 @@ function installFlowButtons() {
 
 export async function initMaestroHarness() {
   harnessReady.textContent = 'Harness: booting';
+  readLaunchAutoFlow();
   installFlowButtons();
   harnessReady.textContent = 'Harness: ready';
   setSummary('Harness: ready');
