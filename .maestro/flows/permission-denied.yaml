@@ -1,6 +1,6 @@
 appId: app.capgo.photo.library
 ---
-- runFlow: ../helpers/launch-harness.yaml
+- runFlow: ../helpers/launch-harness-retained.yaml
 - scrollUntilVisible:
     element:
       id: e2e-flow-permission-denied
