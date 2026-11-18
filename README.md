@@ -102,7 +102,7 @@ const picked = await PhotoLibrary.pickMedia({
 });
 ```
 
-Android ignores this option. When omitted or `false`, behavior stays the same as before (system default presentation on iPad).
+Android ignores this option. When the per-call option is omitted, the resolved value comes from plugin configuration. When the resolved value is `false`, behavior stays the same as before (system default presentation on iPad).
 
 ## Usage
 

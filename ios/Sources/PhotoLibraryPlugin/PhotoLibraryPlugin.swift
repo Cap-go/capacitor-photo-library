@@ -2,6 +2,7 @@ import Capacitor
 import Foundation
 import Photos
 import PhotosUI
+import UIKit
 
 @objc(PhotoLibraryPlugin)
 public class PhotoLibraryPlugin: CAPPlugin, CAPBridgedPlugin {
@@ -156,7 +157,7 @@ public class PhotoLibraryPlugin: CAPPlugin, CAPBridgedPlugin {
 
                 let picker = PHPickerViewController(configuration: configuration)
                 picker.delegate = self
-                if options.pickMediaFullScreen {
+                if options.pickMediaFullScreen, UIDevice.current.userInterfaceIdiom == .pad {
                     picker.modalPresentationStyle = .fullScreen
                 }
 
