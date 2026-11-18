@@ -3,7 +3,6 @@ import { PhotoLibrary } from '@capgo/capacitor-photo-library';
 
 const storagePrefix = '__capgo_photo_maestro_';
 let activeFlowGeneration = 0;
-let autoFlowStarted = false;
 
 function requireElement(id) {
   const element = document.getElementById(id);
@@ -244,44 +243,13 @@ function installFlowButtons() {
   }
 }
 
-async function runAutoFlowIfRequested() {
-  if (autoFlowStarted) {
-    return false;
-  }
-  const autoFlow =
-    (typeof window.__capgoMaestroAutoFlow === 'string' && window.__capgoMaestroAutoFlow) ||
-    localStorage.getItem(`${storagePrefix}autorun`);
-  if (!autoFlow || !flows[autoFlow]) {
-    return false;
-  }
-  autoFlowStarted = true;
-  delete window.__capgoMaestroAutoFlow;
-  localStorage.removeItem(`${storagePrefix}autorun`);
-  setSummary(`EVENT:RUN:${autoFlow}`);
-  await sleep(350);
-  await runFlow(autoFlow);
-  return true;
-}
-
 export async function initMaestroHarness() {
   harnessReady.textContent = 'Harness: booting';
   installFlowButtons();
   harnessReady.textContent = 'Harness: ready';
   setSummary('Harness: ready');
 
-  const resumed = await resumePendingFlowIfNeeded();
-  if (!resumed) {
-    await runAutoFlowIfRequested();
-    if (!autoFlowStarted) {
-      for (let attempt = 0; attempt < 40 && !autoFlowStarted; attempt += 1) {
-        if (typeof window.__capgoMaestroAutoFlow === 'string' && window.__capgoMaestroAutoFlow) {
-          await runAutoFlowIfRequested();
-          break;
-        }
-        await sleep(250);
-      }
-    }
-  }
+  await resumePendingFlowIfNeeded();
 
   App.addListener('appStateChange', (state) => {
     appendLog(`APP:${state.isActive ? 'active' : 'background'}`);
