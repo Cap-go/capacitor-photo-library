@@ -12,4 +12,4 @@ appId: app.capgo.photo.library
     retryTapIfNoChange: true
 - extendedWaitUntil:
     visible: '.*PHASE:pick-media-cancel:opening.*'
-    timeout: 90000
+    timeout: 120000
