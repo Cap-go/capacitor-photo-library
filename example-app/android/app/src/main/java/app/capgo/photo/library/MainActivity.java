@@ -17,16 +17,14 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        setIntent(intent);
         captureAutoFlow(intent);
-        injectAutoFlow();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if (getWindow() != null) {
-            getWindow().getDecorView().post(this::injectAutoFlow);
-        }
+        injectAutoFlow();
     }
 
     private void captureAutoFlow(Intent intent) {
@@ -47,11 +45,8 @@ public class MainActivity extends BridgeActivity {
         if (bridge == null || bridge.getWebView() == null) {
             return;
         }
-        String safeFlow = pendingAutoFlow.replace("'", "\\'");
+        final String safeFlow = pendingAutoFlow.replace("'", "\\'");
         pendingAutoFlow = null;
-        bridge.eval(
-            "window.__capgoMaestroAutoFlow='" + safeFlow + "';window.dispatchEvent(new CustomEvent('capgo-maestro-autoflow',{detail:'" + safeFlow + "'}));",
-            null
-        );
+        bridge.getWebView().post(() -> bridge.eval("window.__capgoMaestroAutoFlow='" + safeFlow + "';", null));
     }
 }

@@ -245,12 +245,16 @@ function installFlowButtons() {
 }
 
 async function runAutoFlowIfRequested() {
+  if (autoFlowStarted) {
+    return false;
+  }
   const autoFlow =
     (typeof window.__capgoMaestroAutoFlow === 'string' && window.__capgoMaestroAutoFlow) ||
     localStorage.getItem(`${storagePrefix}autorun`);
   if (!autoFlow || !flows[autoFlow]) {
     return false;
   }
+  autoFlowStarted = true;
   delete window.__capgoMaestroAutoFlow;
   localStorage.removeItem(`${storagePrefix}autorun`);
   setSummary(`EVENT:RUN:${autoFlow}`);
@@ -268,16 +272,16 @@ export async function initMaestroHarness() {
   const resumed = await resumePendingFlowIfNeeded();
   if (!resumed) {
     await runAutoFlowIfRequested();
-  }
-  window.addEventListener(
-    'capgo-maestro-autoflow',
-    () => {
-      if (!readPending()) {
-        void runAutoFlowIfRequested();
+    if (!autoFlowStarted) {
+      for (let attempt = 0; attempt < 40 && !autoFlowStarted; attempt += 1) {
+        if (typeof window.__capgoMaestroAutoFlow === 'string' && window.__capgoMaestroAutoFlow) {
+          await runAutoFlowIfRequested();
+          break;
+        }
+        await sleep(250);
       }
-    },
-    { once: true },
-  );
+    }
+  }
 
   App.addListener('appStateChange', (state) => {
     appendLog(`APP:${state.isActive ? 'active' : 'background'}`);
