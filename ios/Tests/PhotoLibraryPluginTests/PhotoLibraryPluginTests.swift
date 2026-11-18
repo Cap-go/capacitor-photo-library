@@ -1,15 +1,14 @@
 import XCTest
 @testable import PhotoLibraryPlugin
 
-class PhotoLibraryTests: XCTestCase {
-    func testEcho() {
-        // This is an example of a functional test case for a plugin.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+class PhotoLibraryPickPresentationTests: XCTestCase {
+    func testResolvePickMediaFullScreen_prefersCallValueOverPluginConfig() {
+        XCTAssertTrue(PhotoLibraryPickPresentation.resolvePickMediaFullScreen(callValue: true, pluginConfigValue: false))
+        XCTAssertFalse(PhotoLibraryPickPresentation.resolvePickMediaFullScreen(callValue: false, pluginConfigValue: true))
+    }
 
-        let implementation = PhotoLibrary()
-        let value = "Hello, World!"
-        let result = implementation.echo(value)
-
-        XCTAssertEqual(value, result)
+    func testResolvePickMediaFullScreen_usesPluginConfigWhenCallOmitted() {
+        XCTAssertTrue(PhotoLibraryPickPresentation.resolvePickMediaFullScreen(callValue: nil, pluginConfigValue: true))
+        XCTAssertFalse(PhotoLibraryPickPresentation.resolvePickMediaFullScreen(callValue: nil, pluginConfigValue: false))
     }
 }

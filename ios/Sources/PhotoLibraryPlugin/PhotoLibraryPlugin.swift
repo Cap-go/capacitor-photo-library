@@ -2,6 +2,7 @@ import Capacitor
 import Foundation
 import Photos
 import PhotosUI
+import UIKit
 
 @objc(PhotoLibraryPlugin)
 public class PhotoLibraryPlugin: CAPPlugin, CAPBridgedPlugin {
@@ -139,7 +140,7 @@ public class PhotoLibraryPlugin: CAPPlugin, CAPBridgedPlugin {
             }
 
             do {
-                let options = try PhotoLibraryPickOptions(from: call)
+                let options = try PhotoLibraryPickOptions(from: call, pluginConfig: self.getConfig())
                 var configuration = PHPickerConfiguration(photoLibrary: PHPhotoLibrary.shared())
                 configuration.selectionLimit = options.selectionLimit
                 var filters: [PHPickerFilter] = []
@@ -156,6 +157,9 @@ public class PhotoLibraryPlugin: CAPPlugin, CAPBridgedPlugin {
 
                 let picker = PHPickerViewController(configuration: configuration)
                 picker.delegate = self
+                if options.pickMediaFullScreen, UIDevice.current.userInterfaceIdiom == .pad {
+                    picker.modalPresentationStyle = .fullScreen
+                }
 
                 guard let presenter = self.bridge?.viewController else {
                     call.reject("Unable to access view controller to present picker")

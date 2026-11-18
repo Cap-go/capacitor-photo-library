@@ -185,6 +185,15 @@ struct PhotoLibraryGetLibraryOptions {
     }
 }
 
+enum PhotoLibraryPickPresentation {
+    static func resolvePickMediaFullScreen(callValue: Bool?, pluginConfigValue: Bool) -> Bool {
+        if let callValue {
+            return callValue
+        }
+        return pluginConfigValue
+    }
+}
+
 struct PhotoLibraryPickOptions {
     let selectionLimit: Int
     let includeImages: Bool
@@ -192,8 +201,9 @@ struct PhotoLibraryPickOptions {
     let thumbnailWidth: Int
     let thumbnailHeight: Int
     let thumbnailQuality: Double
+    let pickMediaFullScreen: Bool
 
-    init(from call: CAPPluginCall) throws {
+    init(from call: CAPPluginCall, pluginConfig: PluginConfig) throws {
         let selectionLimit = call.getInt("selectionLimit") ?? 1
         if selectionLimit < 0 {
             throw PhotoLibraryError.invalidOptions("selectionLimit must be greater than or equal to 0")
@@ -217,6 +227,11 @@ struct PhotoLibraryPickOptions {
 
         let quality = call.getDouble("thumbnailQuality") ?? 0.7
         self.thumbnailQuality = max(0.0, min(1.0, quality))
+
+        self.pickMediaFullScreen = PhotoLibraryPickPresentation.resolvePickMediaFullScreen(
+            callValue: call.getBool("pickMediaFullScreen"),
+            pluginConfigValue: pluginConfig.getBoolean("pickMediaFullScreen", false)
+        )
     }
 }
 
