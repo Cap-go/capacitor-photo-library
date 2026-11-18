@@ -102,6 +102,19 @@ export interface PhotoLibraryAlbum {
   assetCount: number;
 }
 
+/**
+ * Plugin configuration for `PhotoLibrary` in `capacitor.config.ts`.
+ *
+ * @since 8.0.35
+ */
+export interface PhotoLibraryPluginConfig {
+  /**
+   * When `true`, presents the iOS `pickMedia()` system picker in full screen on iPad instead of a sheet.
+   * Defaults to `false`. Ignored on Android.
+   */
+  pickMediaFullScreen?: boolean;
+}
+
 export interface PickMediaOptions {
   /**
    * Maximum number of items the user can select. Use `0` to allow unlimited selection.
@@ -118,6 +131,12 @@ export interface PickMediaOptions {
   thumbnailHeight?: number;
   /** JPEG quality for generated thumbnails (0-1). Defaults to `0.7`. */
   thumbnailQuality?: number;
+  /**
+   * When `true`, presents the system picker in full screen on iPad (iOS only).
+   * Overrides the `pickMediaFullScreen` plugin configuration when set.
+   * Defaults to the plugin configuration value, or `false` when unset.
+   */
+  pickMediaFullScreen?: boolean;
 }
 
 export interface PickMediaResult {

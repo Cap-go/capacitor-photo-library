@@ -72,6 +72,38 @@ npm install @capgo/capacitor-photo-library
 npx cap sync
 ```
 
+## iPad full screen picker (`pickMedia`)
+
+On iPad, iOS presents `PHPickerViewController` as a sheet by default, which does not cover the full screen. Set `pickMediaFullScreen` to present the system picker with `UIModalPresentationStyle.fullScreen` instead.
+
+**Plugin configuration (applies to every `pickMedia()` call):**
+
+```ts
+// capacitor.config.ts
+import type { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  plugins: {
+    PhotoLibrary: {
+      pickMediaFullScreen: true,
+    },
+  },
+};
+
+export default config;
+```
+
+**Per-call override (iOS only, overrides plugin configuration):**
+
+```ts
+const picked = await PhotoLibrary.pickMedia({
+  selectionLimit: 5,
+  pickMediaFullScreen: true,
+});
+```
+
+Android ignores this option. When omitted or `false`, behavior stays the same as before (system default presentation on iPad).
+
 ## Usage
 
 ```ts
@@ -333,14 +365,15 @@ Get the native Capacitor plugin version
 
 #### PickMediaOptions
 
-| Prop                   | Type                 | Description                                                                                         |
-| ---------------------- | -------------------- | --------------------------------------------------------------------------------------------------- |
-| **`selectionLimit`**   | <code>number</code>  | Maximum number of items the user can select. Use `0` to allow unlimited selection. Defaults to `1`. |
-| **`includeImages`**    | <code>boolean</code> | Allow the user to select images. Defaults to `true`.                                                |
-| **`includeVideos`**    | <code>boolean</code> | Allow the user to select videos. Defaults to `false`.                                               |
-| **`thumbnailWidth`**   | <code>number</code>  | Width of the generated thumbnails for picked items. Defaults to `256`.                              |
-| **`thumbnailHeight`**  | <code>number</code>  | Height of the generated thumbnails for picked items. Defaults to `256`.                             |
-| **`thumbnailQuality`** | <code>number</code>  | JPEG quality for generated thumbnails (0-1). Defaults to `0.7`.                                     |
+| Prop                      | Type                 | Description                                                                                                                                                                                                      |
+| ------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`selectionLimit`**      | <code>number</code>  | Maximum number of items the user can select. Use `0` to allow unlimited selection. Defaults to `1`.                                                                                                              |
+| **`includeImages`**       | <code>boolean</code> | Allow the user to select images. Defaults to `true`.                                                                                                                                                             |
+| **`includeVideos`**       | <code>boolean</code> | Allow the user to select videos. Defaults to `false`.                                                                                                                                                            |
+| **`thumbnailWidth`**      | <code>number</code>  | Width of the generated thumbnails for picked items. Defaults to `256`.                                                                                                                                           |
+| **`thumbnailHeight`**     | <code>number</code>  | Height of the generated thumbnails for picked items. Defaults to `256`.                                                                                                                                          |
+| **`thumbnailQuality`**    | <code>number</code>  | JPEG quality for generated thumbnails (0-1). Defaults to `0.7`.                                                                                                                                                  |
+| **`pickMediaFullScreen`** | <code>boolean</code> | When `true`, presents the system picker in full screen on iPad (iOS only). Overrides the `pickMediaFullScreen` plugin configuration when set. Defaults to the plugin configuration value, or `false` when unset. |
 
 
 ### Type Aliases
