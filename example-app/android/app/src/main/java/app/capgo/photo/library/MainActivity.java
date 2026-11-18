@@ -44,14 +44,9 @@ public class MainActivity extends BridgeActivity {
         }
         final String flow = pendingMaestroFlow;
         final String js =
-            "(function(){var flow="
+            "window.__capgoMaestroAutoFlow="
                 + JSONObject.quote(flow)
-                + ";var ticks=0;var timer=setInterval(function(){ticks+=1;"
-                + "var ready=document.getElementById('harness-ready');"
-                + "if(!ready||ready.textContent.indexOf('Harness: ready')<0){"
-                + "if(ticks>=120){clearInterval(timer);}return;}"
-                + "clearInterval(timer);window.__capgoMaestroAutoFlow=flow;"
-                + "window.dispatchEvent(new CustomEvent('capgoMaestroAutoFlow'));},250);})();";
+                + ";window.dispatchEvent(new CustomEvent('capgoMaestroAutoFlow'));";
         getBridge()
             .getWebView()
             .post(

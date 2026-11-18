@@ -77,6 +77,32 @@ def run_pick_media_cancel_suite(timeout, device, platform, results):
     )
     if boot_status != 0:
         return boot_status
+    launch = subprocess.run(
+        [
+            'adb',
+            'shell',
+            'am',
+            'start',
+            '-f',
+            '0x24000000',
+            '-n',
+            f'{app_id}/.MainActivity',
+            '--es',
+            'capgoMaestroFlow',
+            'pick-media-cancel',
+        ],
+        check=False,
+    )
+    if launch.returncode != 0:
+        return launch.returncode
+    time.sleep(4)
+    phase_status = run_command(
+        build_maestro_command('pick-media-cancel-phase', device, platform, results),
+        results / 'junit.xml',
+        timeout,
+    )
+    if phase_status != 0:
+        return phase_status
     time.sleep(1)
     for _ in range(2):
         dismiss = subprocess.run(['adb', 'shell', 'input', 'keyevent', '4'], check=False)
