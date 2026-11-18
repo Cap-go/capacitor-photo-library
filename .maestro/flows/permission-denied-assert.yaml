@@ -7,10 +7,10 @@ appId: app.capgo.photo.library
       capgoMaestroFlow: permission-denied
 - extendedWaitUntil:
     visible: '.*Harness: ready.*'
-- tapOn:
-    text: permission-denied-assert
-    optional: true
     timeout: 90000
+- tapOn:
+    text: permission-denied
+    optional: true
 - extendedWaitUntil:
     visible: '.*EVENT:RUN:permission-denied.*'
     timeout: 90000
