@@ -25,7 +25,7 @@ fi
 
 if [[ ! -f "$FLOW_PATH" ]]; then
   case "$FLOW_ID" in
-    low-memory-mid-library|kill-relaunch-mid-library|permission-denied)
+    low-memory-mid-library|kill-relaunch-mid-library|pick-media-cancel|permission-denied)
       ;;
     *)
       echo "Missing flow at $FLOW_PATH" >&2
