@@ -199,7 +199,7 @@ const flows = {
 async function resumePendingFlowIfNeeded() {
   const pending = readPending();
   if (!pending) {
-    return;
+    return false;
   }
   const { flowId } = pending;
   activeFlowGeneration += 1;
@@ -212,6 +212,7 @@ async function resumePendingFlowIfNeeded() {
   } catch (error) {
     setMarker(flowId, false, String(error?.message ?? error));
   }
+  return true;
 }
 
 async function runFlow(flowId) {
@@ -242,13 +243,31 @@ function installFlowButtons() {
   }
 }
 
+async function runAutoFlowIfRequested() {
+  const autoFlow =
+    (typeof window.__capgoMaestroAutoFlow === 'string' && window.__capgoMaestroAutoFlow) ||
+    localStorage.getItem(`${storagePrefix}autorun`);
+  if (!autoFlow || !flows[autoFlow]) {
+    return false;
+  }
+  delete window.__capgoMaestroAutoFlow;
+  localStorage.removeItem(`${storagePrefix}autorun`);
+  setSummary(`EVENT:RUN:${autoFlow}`);
+  await sleep(350);
+  await runFlow(autoFlow);
+  return true;
+}
+
 export async function initMaestroHarness() {
   harnessReady.textContent = 'Harness: booting';
   installFlowButtons();
   harnessReady.textContent = 'Harness: ready';
   setSummary('Harness: ready');
 
-  await resumePendingFlowIfNeeded();
+  const resumed = await resumePendingFlowIfNeeded();
+  if (!resumed) {
+    await runAutoFlowIfRequested();
+  }
 
   App.addListener('appStateChange', (state) => {
     appendLog(`APP:${state.isActive ? 'active' : 'background'}`);

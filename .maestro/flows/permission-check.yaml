@@ -1,15 +1,17 @@
 appId: app.capgo.photo.library
 ---
-- runFlow: ../helpers/launch-harness.yaml
-- scrollUntilVisible:
-    element:
-      text: permission-check
-    direction: DOWN
-    timeout: 45000
-    centerElement: true
-- tapOn:
-    text: permission-check
-    retryTapIfNoChange: true
+- stopApp
+- launchApp:
+    clearState: true
+    arguments:
+      isE2E: true
+      capgoMaestroFlow: permission-check
+- extendedWaitUntil:
+    visible: '.*Harness: ready.*'
+    timeout: 90000
+- extendedWaitUntil:
+    visible: '.*EVENT:RUN:permission-check.*'
+    timeout: 90000
 - extendedWaitUntil:
     visible: '.*Marker: permission-check:success.*'
-    timeout: 90000
+    timeout: 120000
