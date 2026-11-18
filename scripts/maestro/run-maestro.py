@@ -84,7 +84,7 @@ def run_low_memory_suite(timeout, device, platform, results):
             return stop.returncode
     else:
         stop = subprocess.run(['xcrun', 'simctl', 'terminate', device, app_id], check=False)
-        if stop.returncode != 0:
+        if stop.returncode not in (0, 3):
             return stop.returncode
     return run_command(
         build_maestro_command('low-memory-mid-library-post', device, platform, results),

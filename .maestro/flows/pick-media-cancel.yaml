@@ -3,12 +3,12 @@ appId: app.capgo.photo.library
 - runFlow: ../helpers/launch-harness.yaml
 - scrollUntilVisible:
     element:
-      id: e2e-flow-pick-media-cancel
+      text: pick-media-cancel
     direction: DOWN
     timeout: 45000
     centerElement: true
 - tapOn:
-    id: e2e-flow-pick-media-cancel
+    text: pick-media-cancel
     retryTapIfNoChange: true
 - extendedWaitUntil:
     visible: '.*EVENT:RUN:pick-media-cancel.*'

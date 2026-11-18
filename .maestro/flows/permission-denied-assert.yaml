@@ -9,12 +9,12 @@ appId: app.capgo.photo.library
     timeout: 90000
 - scrollUntilVisible:
     element:
-      id: e2e-flow-permission-denied
+      text: permission-denied
     direction: DOWN
     timeout: 45000
     centerElement: true
 - tapOn:
-    id: e2e-flow-permission-denied
+    text: permission-denied
     retryTapIfNoChange: true
 - extendedWaitUntil:
     visible: '.*EVENT:RUN:permission-denied.*'
