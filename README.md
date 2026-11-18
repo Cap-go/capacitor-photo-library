@@ -93,6 +93,8 @@ const config: CapacitorConfig = {
 export default config;
 ```
 
+After you change `capacitor.config.ts`, run `npx cap copy ios` or `npx cap sync ios` before rebuilding the iOS app so the native project loads the updated plugin configuration. Per-call `pickMediaFullScreen` on `pickMedia()` does not require this step.
+
 **Per-call override (iOS only, overrides plugin configuration):**
 
 ```ts
