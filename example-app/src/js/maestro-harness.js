@@ -265,6 +265,16 @@ async function runFlow(flowId) {
   await runner();
 }
 
+async function tryAutoFlow() {
+  const flowId = window.__capgoMaestroAutoFlow;
+  if (!flowId || !flows[flowId]) {
+    return;
+  }
+  window.__capgoMaestroAutoFlow = undefined;
+  setSummary(`EVENT:RUN:${flowId}`);
+  await runFlow(flowId);
+}
+
 function installFlowButtons() {
   const flowIds = Object.keys(flows);
   flowButtons.innerHTML = '';
@@ -292,7 +302,14 @@ export async function initMaestroHarness() {
   harnessReady.textContent = 'Harness: ready';
   setSummary('Harness: ready');
 
+  window.addEventListener('capgoMaestroAutoFlow', () => {
+    void tryAutoFlow().catch((error) => {
+      setSummary(`Harness: auto-flow-error:${error?.message ?? error}`);
+    });
+  });
+
   await resumePendingFlowIfNeeded();
+  await tryAutoFlow();
 
   App.addListener('appStateChange', (state) => {
     appendLog(`APP:${state.isActive ? 'active' : 'background'}`);

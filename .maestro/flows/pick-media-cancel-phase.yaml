@@ -1,0 +1,5 @@
+appId: app.capgo.photo.library
+---
+- extendedWaitUntil:
+    visible: '.*PHASE:pick-media-cancel:opening.*'
+    timeout: 90000

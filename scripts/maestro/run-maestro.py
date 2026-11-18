@@ -33,6 +33,8 @@ FLOWS = {
     'pick-media-cancel': ROOT / '.maestro/flows/pick-media-cancel.yaml',
     'pick-media-cancel-pre': ROOT / '.maestro/flows/pick-media-cancel-pre.yaml',
     'pick-media-cancel-post': ROOT / '.maestro/flows/pick-media-cancel-post.yaml',
+    'pick-media-cancel-android-boot': ROOT / '.maestro/flows/pick-media-cancel-android-boot.yaml',
+    'pick-media-cancel-phase': ROOT / '.maestro/flows/pick-media-cancel-phase.yaml',
     'kill-relaunch-mid-library': ROOT / '.maestro/flows/kill-relaunch-mid-library.yaml',
     'kill-relaunch-mid-library-pre': ROOT / '.maestro/flows/kill-relaunch-mid-library-pre.yaml',
     'kill-relaunch-mid-library-post': ROOT / '.maestro/flows/kill-relaunch-mid-library-post.yaml',
@@ -67,15 +69,38 @@ def run_permission_denied_suite(timeout, device, platform, results):
 
 
 def run_pick_media_cancel_suite(timeout, device, platform, results):
-    pre_status = run_command(
-        build_maestro_command('pick-media-cancel-pre', device, platform, results),
+    app_id = 'app.capgo.photo.library'
+    boot_status = run_command(
+        build_maestro_command('pick-media-cancel-android-boot', device, platform, results),
         results / 'junit.xml',
         timeout,
     )
-    if pre_status != 0:
-        return pre_status
+    if boot_status != 0:
+        return boot_status
+    launch = subprocess.run(
+        [
+            'adb',
+            'shell',
+            'am',
+            'start',
+            '-n',
+            f'{app_id}/.MainActivity',
+            '--es',
+            'capgoMaestroFlow',
+            'pick-media-cancel',
+        ],
+        check=False,
+    )
+    if launch.returncode != 0:
+        return launch.returncode
+    phase_status = run_command(
+        build_maestro_command('pick-media-cancel-phase', device, platform, results),
+        results / 'junit.xml',
+        timeout,
+    )
+    if phase_status != 0:
+        return phase_status
     time.sleep(2)
-    app_id = 'app.capgo.photo.library'
     for _ in range(2):
         dismiss = subprocess.run(['adb', 'shell', 'input', 'keyevent', '4'], check=False)
         if dismiss.returncode != 0:
