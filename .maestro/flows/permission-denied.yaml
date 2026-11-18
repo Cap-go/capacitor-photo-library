@@ -1,0 +1,15 @@
+appId: app.capgo.photo.library
+---
+- runFlow: ../helpers/launch-harness.yaml
+- scrollUntilVisible:
+    element:
+      text: permission-denied
+    direction: DOWN
+    timeout: 45000
+    centerElement: true
+- tapOn:
+    text: permission-denied
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: '.*Marker: permission-denied:success.*'
+    timeout: 90000

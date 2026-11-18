@@ -1,0 +1,226 @@
+import { App } from '@capacitor/app';
+import { PhotoLibrary } from '@capgo/capacitor-photo-library';
+
+const storagePrefix = '__capgo_photo_maestro_';
+
+function requireElement(id) {
+  const element = document.getElementById(id);
+  if (!element) {
+    throw new Error(`Expected #${id}`);
+  }
+  return element;
+}
+
+const harnessReady = requireElement('harness-ready');
+const e2eSummary = requireElement('e2e-summary');
+const e2eLog = requireElement('e2e-log');
+const flowButtons = requireElement('e2e-flow-buttons');
+
+function appendLog(line) {
+  const stamp = new Date().toISOString();
+  e2eLog.textContent = `${e2eLog.textContent}\n${stamp} ${line}`.trim();
+}
+
+function setSummary(text) {
+  e2eSummary.textContent = text;
+  if (/^(PHASE|Marker|ASSERT|EVENT|STATE|APP|AUTH):/.test(text)) {
+    harnessReady.textContent = text;
+  }
+  appendLog(text);
+}
+
+function setMarker(flowId, ok, detail = '') {
+  const status = ok ? 'success' : 'failure';
+  const suffix = detail ? `:${detail}` : '';
+  setSummary(`Marker: ${flowId}:${status}${suffix}`);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function persistPending(flowId, payload) {
+  localStorage.setItem(`${storagePrefix}pending_flow`, flowId);
+  localStorage.setItem(`${storagePrefix}pending_payload`, JSON.stringify(payload));
+}
+
+function clearPending() {
+  localStorage.removeItem(`${storagePrefix}pending_flow`);
+  localStorage.removeItem(`${storagePrefix}pending_payload`);
+}
+
+function readPending() {
+  const flowId = localStorage.getItem(`${storagePrefix}pending_flow`);
+  const raw = localStorage.getItem(`${storagePrefix}pending_payload`);
+  if (!flowId || !raw) {
+    return null;
+  }
+  return { flowId, payload: JSON.parse(raw) };
+}
+
+async function assertLibraryHasSeededMedia() {
+  const lib = await PhotoLibrary.getLibrary({
+    limit: 8,
+    thumbnailWidth: 128,
+    thumbnailHeight: 128,
+    includeVideos: false,
+  });
+  if (lib.totalCount < 1 || lib.assets.length < 1) {
+    throw new Error(`expected seeded library media, totalCount=${lib.totalCount}`);
+  }
+  return lib;
+}
+
+const flows = {
+  async 'permission-check'() {
+    const auth = await PhotoLibrary.checkAuthorization();
+    setSummary(`AUTH:${auth.state}`);
+    setMarker('permission-check', true, auth.state);
+  },
+
+  async 'permission-grant-library'() {
+    const auth = await PhotoLibrary.requestAuthorization();
+    setSummary(`AUTH:${auth.state}`);
+    if (auth.state === 'denied') {
+      throw new Error('authorization denied after request');
+    }
+    const albums = await PhotoLibrary.getAlbums();
+    if (!Array.isArray(albums.albums)) {
+      throw new Error('albums payload invalid');
+    }
+    const lib = await assertLibraryHasSeededMedia();
+    setMarker('permission-grant-library', true, `albums=${albums.albums.length}:assets=${lib.assets.length}`);
+  },
+
+  async 'permission-denied'() {
+    const auth = await PhotoLibrary.checkAuthorization();
+    setSummary(`AUTH:${auth.state}`);
+    if (auth.state === 'authorized') {
+      throw new Error('expected denied or limited, not full authorized');
+    }
+    try {
+      await PhotoLibrary.getLibrary({ limit: 1 });
+      throw new Error('getLibrary should fail when access is denied');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setMarker('permission-denied', true, message);
+    }
+  },
+
+  async 'pick-media-cancel'() {
+    setSummary('PHASE:pick-media-cancel:opening');
+    const result = await PhotoLibrary.pickMedia({ selectionLimit: 1, includeImages: true, includeVideos: false });
+    if (result.assets.length !== 0) {
+      throw new Error(`expected empty pick result on cancel, got ${result.assets.length}`);
+    }
+    setMarker('pick-media-cancel', true, 'assets=0');
+  },
+
+  async 'kill-relaunch-mid-library'() {
+    persistPending('kill-relaunch-mid-library', { resume: true });
+    setSummary('PHASE:kill-relaunch-mid-library:fetching');
+    void PhotoLibrary.getLibrary({
+      limit: 40,
+      includeFullResolutionData: true,
+      thumbnailWidth: 384,
+      thumbnailHeight: 384,
+    })
+      .then(async (lib) => {
+        if (lib.assets.length < 1) {
+          throw new Error('library fetch returned no assets');
+        }
+        clearPending();
+        setMarker('kill-relaunch-mid-library', true, `assets=${lib.assets.length}`);
+      })
+      .catch((error) => {
+        setMarker('kill-relaunch-mid-library', false, String(error?.message ?? error));
+      });
+    await sleep(2_500);
+  },
+
+  async 'low-memory-mid-library'() {
+    persistPending('low-memory-mid-library', { resume: true });
+    setSummary('PHASE:low-memory-mid-library:fetching');
+    void PhotoLibrary.getLibrary({
+      limit: 40,
+      includeFullResolutionData: true,
+      thumbnailWidth: 384,
+      thumbnailHeight: 384,
+    })
+      .then(async (lib) => {
+        if (lib.assets.length < 1) {
+          throw new Error('library fetch returned no assets');
+        }
+        clearPending();
+        setMarker('low-memory-mid-library', true, `assets=${lib.assets.length}`);
+      })
+      .catch((error) => {
+        setMarker('low-memory-mid-library', false, String(error?.message ?? error));
+      });
+    await sleep(2_500);
+  },
+};
+
+async function resumePendingFlowIfNeeded() {
+  const pending = readPending();
+  if (!pending) {
+    return;
+  }
+  const { flowId } = pending;
+  try {
+    await assertLibraryHasSeededMedia();
+    clearPending();
+    setMarker(flowId, true, 'resumed');
+  } catch (error) {
+    setMarker(flowId, false, String(error?.message ?? error));
+  }
+}
+
+async function runFlow(flowId) {
+  appendLog(`RUN:${flowId}`);
+  const runner = flows[flowId];
+  if (!runner) {
+    throw new Error(`Unknown flow ${flowId}`);
+  }
+  await runner();
+}
+
+function installFlowButtons() {
+  const flowIds = Object.keys(flows);
+  flowButtons.innerHTML = '';
+  for (const flowId of flowIds) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = `e2e-flow-${flowId}`;
+    button.setAttribute('data-testid', `e2e-flow-${flowId}`);
+    button.textContent = flowId;
+    button.addEventListener('click', async () => {
+      try {
+        await runFlow(flowId);
+      } catch (error) {
+        setMarker(flowId, false, String(error?.message ?? error));
+      }
+    });
+    flowButtons.appendChild(button);
+  }
+}
+
+export async function initMaestroHarness() {
+  harnessReady.textContent = 'Harness: booting';
+  installFlowButtons();
+  harnessReady.textContent = 'Harness: ready';
+  setSummary('Harness: ready');
+
+  await resumePendingFlowIfNeeded();
+
+  App.addListener('appStateChange', (state) => {
+    appendLog(`APP:${state.isActive ? 'active' : 'background'}`);
+    if (state.isActive) {
+      resumePendingFlowIfNeeded().catch((error) => {
+        setSummary(`APP:resume-error:${error?.message ?? error}`);
+      });
+    }
+  });
+}

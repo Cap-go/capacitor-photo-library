@@ -45,6 +45,10 @@
       <string>UIInterfaceOrientationLandscapeLeft</string>
       <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Maestro E2E tests need photo library access to verify the plugin.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Maestro E2E tests need photo library access to verify the plugin.</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <true/>
     <key>UIApplicationSceneManifest</key>
