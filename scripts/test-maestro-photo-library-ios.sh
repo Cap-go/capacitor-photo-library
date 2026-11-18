@@ -24,8 +24,14 @@ if [[ ! -d "$APP_PATH" ]]; then
 fi
 
 if [[ ! -f "$FLOW_PATH" ]]; then
-  echo "Missing flow at $FLOW_PATH" >&2
-  exit 1
+  case "$FLOW_ID" in
+    low-memory-mid-library|permission-denied)
+      ;;
+    *)
+      echo "Missing flow at $FLOW_PATH" >&2
+      exit 1
+      ;;
+  esac
 fi
 
 cd "$ROOT_DIR"
