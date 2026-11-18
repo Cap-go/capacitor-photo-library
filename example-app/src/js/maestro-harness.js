@@ -124,7 +124,10 @@ const flows = {
         setMarker('pick-media-cancel', true, 'assets=0');
       })
       .catch((error) => {
-        setMarker('pick-media-cancel', false, String(error?.message ?? error));
+        const message = String(error?.message ?? error);
+        const cancelled =
+          /cancel/i.test(message) || /dismiss/i.test(message) || /User canceled/i.test(message);
+        setMarker('pick-media-cancel', cancelled, cancelled ? 'cancelled' : message);
       });
     await sleep(250);
   },
@@ -233,8 +236,10 @@ function installFlowButtons() {
     button.id = `e2e-flow-${flowId}`;
     button.setAttribute('data-testid', `e2e-flow-${flowId}`);
     button.textContent = flowId;
-    button.addEventListener('click', () => {
+    button.addEventListener('pointerdown', () => {
       setSummary(`EVENT:RUN:${flowId}`);
+    });
+    button.addEventListener('click', () => {
       void runFlow(flowId).catch((error) => {
         setMarker(flowId, false, String(error?.message ?? error));
       });
