@@ -258,17 +258,7 @@ jobs:
       - maestro_build_ios_app
     timeout-minutes: 10
     runs-on: macOS-latest
-    name: Maestro E2E iOS / ${{ matrix.flow }}
-    strategy:
-      fail-fast: false
-      matrix:
-        flow:
-          - permission-check
-          - permission-grant-library
-          - permission-denied
-          - pick-media-cancel
-          - kill-relaunch-mid-library
-          - low-memory-mid-library
+    name: Maestro E2E iOS
     steps:
       - name: Check out
         uses: actions/checkout@v6
@@ -297,33 +287,23 @@ jobs:
             ls -laR maestro-ios-app | head -80 >&2
             exit 1
           fi
-      - name: Select iOS simulator
-        env:
-          CAPGO_MAESTRO_SIMULATOR_LABEL: ${{ matrix.flow }}
-        run: |
-          simulator_id="$(./scripts/maestro/select-ios-simulator.sh)"
-          if ! xcrun simctl list devices booted -j 2>/dev/null | grep -q "$simulator_id"; then
-            xcrun simctl boot "$simulator_id" 2>/dev/null || true
-            xcrun simctl bootstatus "$simulator_id" -b
-          fi
-          echo "CAPGO_MAESTRO_IOS_SIMULATOR_ID=$simulator_id" >> "$GITHUB_ENV"
-      - name: Run Maestro flow
+      - name: Run iOS Maestro shards
         env:
           CAPGO_MAESTRO_IOS_APP_PATH: maestro-ios-app/App.app
-          CAPGO_MAESTRO_FLOW: ${{ matrix.flow }}
-          CAPGO_MAESTRO_SIMULATOR_LABEL: ${{ matrix.flow }}
-          # Suite flows run pre + post commands; retry only on IOSDriverTimeoutException.
+          CAPGO_MAESTRO_IOS_SHARD_PARALLEL: 3
           CAPGO_MAESTRO_TIMEOUT_SECONDS: 360
           CAPGO_MAESTRO_TEST_RETRIES: 2
           CAPGO_MAESTRO_LIGHT_RETRY_SLEEP_SECONDS: 2
           MAESTRO_DRIVER_STARTUP_TIMEOUT: 180000
-        run: ./scripts/test-maestro-photo-library-ios.sh
+        run: bash ./scripts/maestro/run-ios-parallel-shards.sh
       - name: Upload Maestro artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: maestro-results-ios-${{ matrix.flow }}
-          path: maestro-results-ios
+          name: maestro-results-ios
+          path: |
+            maestro-results-ios-*
+            maestro-results-ios-shard-*.log
 
   maestro_e2e_android_gate:
     if: always()
@@ -353,30 +333,3 @@ jobs:
             exit 1
           fi
 
-  maestro_e2e_ios_gate:
-    if: always()
-    needs:
-      - maestro_e2e_ios
-    timeout-minutes: 10
-    runs-on: macOS-latest
-    name: Maestro E2E iOS
-    permissions:
-      actions: read
-    steps:
-      - name: Fail when any iOS Maestro flow fails
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          conclusions=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" --paginate \
-            --jq '[.jobs[] | select(.name | contains("Maestro E2E iOS / ")) | .conclusion]')
-          echo "$conclusions"
-          count=$(echo "$conclusions" | jq 'length')
-          success=$(echo "$conclusions" | jq '[.[] | select(. == "success")] | length')
-          if [[ "$count" -ne 6 ]]; then
-            echo "Expected 6 iOS Maestro flow jobs, found ${count}."
-            exit 1
-          fi
-          if [[ "$success" -ne 6 ]]; then
-            echo "One or more iOS Maestro flows did not succeed (${success}/6 success)."
-            exit 1
-          fi

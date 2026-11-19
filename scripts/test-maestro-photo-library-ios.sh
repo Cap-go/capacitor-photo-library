@@ -74,19 +74,21 @@ cd "$ROOT_DIR"
 export CAPGO_MAESTRO_IOS_SIMULATOR_ID="$SIMULATOR_ID"
 export CAPGO_MAESTRO_APP_ID="$APP_ID"
 
-booted="false"
-if xcrun simctl list devices booted -j 2>/dev/null | grep -q "$SIMULATOR_ID"; then
-  booted="true"
+if [[ "${CAPGO_MAESTRO_IOS_SKIP_DEVICE_PREP:-}" != "1" ]]; then
+  booted="false"
+  if xcrun simctl list devices booted -j 2>/dev/null | grep -q "$SIMULATOR_ID"; then
+    booted="true"
+  fi
+  if [[ "$booted" != "true" ]]; then
+    xcrun simctl boot "$SIMULATOR_ID" >/dev/null 2>&1 || true
+    xcrun simctl bootstatus "$SIMULATOR_ID" -b
+  fi
+  disable_ios_simulator_animations "$SIMULATOR_ID"
+  xcrun simctl uninstall "$SIMULATOR_ID" "$APP_ID" >/dev/null 2>&1 || true
+  xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
+  bash "$ROOT_DIR/scripts/maestro/seed-ios-photos.sh" "$SIMULATOR_ID"
+  bash "$ROOT_DIR/scripts/maestro/prepare-ios-permissions.sh" "$APP_ID" "$SIMULATOR_ID" "$FLOW_ID"
 fi
-if [[ "$booted" != "true" ]]; then
-  xcrun simctl boot "$SIMULATOR_ID" >/dev/null 2>&1 || true
-  xcrun simctl bootstatus "$SIMULATOR_ID" -b
-fi
-disable_ios_simulator_animations "$SIMULATOR_ID"
-xcrun simctl uninstall "$SIMULATOR_ID" "$APP_ID" >/dev/null 2>&1 || true
-xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
-bash "$ROOT_DIR/scripts/maestro/seed-ios-photos.sh" "$SIMULATOR_ID"
-bash "$ROOT_DIR/scripts/maestro/prepare-ios-permissions.sh" "$APP_ID" "$SIMULATOR_ID" "$FLOW_ID"
 
 rm -rf "$RESULTS_DIR"
 mkdir -p "$RESULTS_DIR"
