@@ -282,7 +282,7 @@ jobs:
     name: Maestro E2E iOS / ${{ matrix.flow }}
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 1
       matrix:
         flow:
           - permission-check
@@ -312,8 +312,6 @@ jobs:
           mv App.app maestro-ios-app/App.app
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
       - name: Select iOS simulator
-        env:
-          CAPGO_MAESTRO_SIMULATOR_LABEL: ${{ matrix.flow }}
         run: |
           simulator_id="$(./scripts/maestro/select-ios-simulator.sh)"
           xcrun simctl boot "$simulator_id" 2>/dev/null || true

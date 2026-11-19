@@ -41,10 +41,14 @@ cd "$ROOT_DIR"
 export CAPGO_MAESTRO_IOS_SIMULATOR_ID="$SIMULATOR_ID"
 export CAPGO_MAESTRO_APP_ID="$APP_ID"
 
-if [[ -z "${CAPGO_MAESTRO_IOS_SIMULATOR_ID:-}" ]]; then
-  xcrun simctl boot "$SIMULATOR_ID" >/dev/null 2>&1 || true
+booted="false"
+if xcrun simctl list devices booted -j 2>/dev/null | grep -q "$SIMULATOR_ID"; then
+  booted="true"
 fi
-xcrun simctl bootstatus "$SIMULATOR_ID" -b
+if [[ "$booted" != "true" ]]; then
+  xcrun simctl boot "$SIMULATOR_ID" >/dev/null 2>&1 || true
+  xcrun simctl bootstatus "$SIMULATOR_ID" -b
+fi
 xcrun simctl uninstall "$SIMULATOR_ID" "$APP_ID" >/dev/null 2>&1 || true
 xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
 bash "$ROOT_DIR/scripts/maestro/seed-ios-photos.sh" "$SIMULATOR_ID"
