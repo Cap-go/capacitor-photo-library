@@ -123,8 +123,8 @@ const flows = {
   },
 
   async 'pick-media-cancel'() {
-    await sleep(500);
     setSummary('PHASE:pick-media-cancel:opening');
+    await sleep(500);
     let settled = false;
     const settle = (ok, detail) => {
       if (settled) {
