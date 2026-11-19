@@ -17,6 +17,12 @@ ios_shards="$(
     /^  all\)$/ { capture = 1; next }
     capture && /^\)$/ { exit }
     capture && /^      [a-z0-9-]+$/ { gsub(/^      /, ""); print }
+    /^  a\)$/ { capture_a = 1; next }
+    capture_a && /^\)$/ { capture_a = 0; next }
+    capture_a && /^    [a-z0-9-]+$/ { gsub(/^    /, ""); print }
+    /^  b\)$/ { capture_b = 1; next }
+    capture_b && /^\)$/ { capture_b = 0; next }
+    capture_b && /^    [a-z0-9-]+$/ { gsub(/^    /, ""); print }
   ' "${ROOT_DIR}/scripts/maestro/run-ios-parallel-shards.sh" | sort -u
 )"
 
