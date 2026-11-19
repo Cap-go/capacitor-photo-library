@@ -4,7 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 FLOW_ID="${CAPGO_MAESTRO_FLOW:-permission-check}"
-FLOW_PATH="$ROOT_DIR/.maestro/flows/${FLOW_ID}.yaml"
+FLOW_PATH="$ROOT_DIR/.maestro/flows/${FLOW_ID}.ios.yaml"
+if [[ ! -f "$FLOW_PATH" ]]; then
+  FLOW_PATH="$ROOT_DIR/.maestro/flows/${FLOW_ID}.yaml"
+fi
 RESULTS_DIR="${CAPGO_MAESTRO_RESULTS_DIR:-$ROOT_DIR/maestro-results-ios}"
 MAESTRO_TIMEOUT_SECONDS="${CAPGO_MAESTRO_TIMEOUT_SECONDS:-300}"
 MAESTRO_TEST_RETRIES="${CAPGO_MAESTRO_TEST_RETRIES:-2}"

@@ -45,6 +45,13 @@ FLOWS = {
 }
 
 
+def flow_path(scenario, platform):
+    platform_file = ROOT / '.maestro/flows' / f'{scenario}.{platform}.yaml'
+    if platform_file.is_file():
+        return platform_file
+    return FLOWS[scenario]
+
+
 def remove_report(report):
     try:
         os.remove(report)
@@ -183,7 +190,7 @@ def run_low_memory_suite(timeout, device, platform, results):
 
 def build_maestro_command(scenario, device, platform, results, report):
   return [
-    'maestro', 'test', '--config', str(ROOT / '.maestro/config.yaml'), str(FLOWS[scenario]),
+    'maestro', 'test', '--config', str(ROOT / '.maestro/config.yaml'), str(flow_path(scenario, platform)),
     '--platform', platform, '--udid', device,
     '--format', 'junit', '--output', str(report),
     '--debug-output', str(results / 'debug'), '--flatten-debug-output',
