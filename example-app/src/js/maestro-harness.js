@@ -275,6 +275,7 @@ async function resumePendingFlowIfNeeded() {
 }
 
 async function runFlow(flowId) {
+  setSummary(`RUN:${flowId}`);
   appendLog(`RUN:${flowId}`);
   const runner = flows[flowId];
   if (!runner) {
@@ -311,12 +312,6 @@ export async function initMaestroHarness() {
   setSummary('Harness: ready');
 
   await resumePendingFlowIfNeeded();
-
-  const autoFlow =
-    typeof window.__capgoMaestroFlow === 'string' ? window.__capgoMaestroFlow.trim() : '';
-  if (autoFlow && Object.prototype.hasOwnProperty.call(flows, autoFlow)) {
-    await runFlow(autoFlow);
-  }
 
   App.addListener('appStateChange', (state) => {
     appendLog(`APP:${state.isActive ? 'active' : 'background'}`);

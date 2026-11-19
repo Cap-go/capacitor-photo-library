@@ -16,7 +16,15 @@ final class MaestroBridgeViewController: CAPBridgeViewController {
             }
             if argument.hasPrefix("capgoMaestroFlow=") {
                 let value = String(argument.dropFirst("capgoMaestroFlow=".count))
-                return value.isEmpty ? nil : value
+                if !value.isEmpty {
+                    return value
+                }
+            }
+            if argument.hasPrefix("isE2E=") {
+                let value = String(argument.dropFirst("isE2E=".count))
+                if !value.isEmpty && value != "true" && value != "1" {
+                    return value
+                }
             }
         }
         return nil
@@ -39,7 +47,11 @@ final class MaestroBridgeViewController: CAPBridgeViewController {
         guard shouldInjectMaestroFlag else {
             return
         }
-        bridge?.eval(js: maestroHarnessJavaScript())
+        let script = maestroHarnessJavaScript()
+        bridge?.eval(js: script)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.bridge?.eval(js: script)
+        }
         #endif
     }
 }
