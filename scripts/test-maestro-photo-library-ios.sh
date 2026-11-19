@@ -84,6 +84,7 @@ rm -rf "$RESULTS_DIR"
 mkdir -p "$RESULTS_DIR"
 
 SUITE_DEADLINE=$((SECONDS + MAESTRO_TIMEOUT_SECONDS))
+
 attempt=1
 while (( attempt <= MAESTRO_TEST_RETRIES )); do
   remaining=$((SUITE_DEADLINE - SECONDS - 10))

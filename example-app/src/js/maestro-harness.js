@@ -201,7 +201,6 @@ const flows = {
         if (generation !== activeFlowGeneration) {
           return;
         }
-        clearPending();
         setMarker('kill-relaunch-mid-library', false, String(error?.message ?? error));
       });
     await sleep(2_500);
@@ -235,7 +234,6 @@ const flows = {
         if (generation !== activeFlowGeneration) {
           return;
         }
-        clearPending();
         setMarker('low-memory-mid-library', false, String(error?.message ?? error));
       });
     await sleep(2_500);
@@ -316,5 +314,10 @@ export async function initMaestroHarness() {
 
   App.addListener('appStateChange', (state) => {
     appendLog(`APP:${state.isActive ? 'active' : 'background'}`);
+    if (state.isActive) {
+      resumePendingFlowIfNeeded().catch((error) => {
+        setSummary(`APP:resume-error:${error?.message ?? error}`);
+      });
+    }
   });
 }
