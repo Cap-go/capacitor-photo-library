@@ -133,13 +133,13 @@ for preferred_name in "${preferred_names[@]}"; do
   fi
 done
 
-if simulator_id="$(create_lightweight_device)"; then
+simulator_id="$(find_first_iphone)"
+if [[ -n "$simulator_id" ]]; then
   printf '%s\n' "$simulator_id"
   exit 0
 fi
 
-simulator_id="$(find_first_iphone)"
-if [[ -n "$simulator_id" ]]; then
+if simulator_id="$(create_lightweight_device)"; then
   printf '%s\n' "$simulator_id"
   exit 0
 fi
