@@ -283,6 +283,20 @@ jobs:
         with:
           name: maestro-photo-library-ios-app
           path: maestro-ios-app
+      - name: Normalize downloaded iOS app bundle
+        run: |
+          if [[ ! -d maestro-ios-app/App.app ]] && [[ -f maestro-ios-app/Info.plist ]]; then
+            bundle_dir="$(mktemp -d)"
+            mv maestro-ios-app "$bundle_dir/App.app"
+            mkdir -p maestro-ios-app
+            mv "$bundle_dir/App.app" maestro-ios-app/
+            rmdir "$bundle_dir"
+          fi
+          if [[ ! -d maestro-ios-app/App.app ]]; then
+            echo "Expected App.app under maestro-ios-app after download" >&2
+            ls -laR maestro-ios-app | head -80 >&2
+            exit 1
+          fi
       - name: Select iOS simulator
         env:
           CAPGO_MAESTRO_SIMULATOR_LABEL: ${{ matrix.flow }}

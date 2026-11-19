@@ -17,12 +17,17 @@ LIGHT_RETRY_SLEEP_SECONDS="${CAPGO_MAESTRO_LIGHT_RETRY_SLEEP_SECONDS:-3}"
 APP_ID="app.capgo.photo.library"
 LOCAL_APP_PATH="$ROOT_DIR/.maestro-ios-derived-data/Build/Products/Debug-iphonesimulator/App.app"
 STAGED_APP_PATH="$ROOT_DIR/maestro-ios-app/App.app"
+STAGED_APP_ROOT="$ROOT_DIR/maestro-ios-app"
 
 resolve_app_path() {
   local candidate="${CAPGO_MAESTRO_IOS_APP_PATH:-}"
   if [[ -z "$candidate" ]]; then
     if [[ -d "$STAGED_APP_PATH" ]]; then
       printf '%s' "$STAGED_APP_PATH"
+      return 0
+    fi
+    if [[ -f "$STAGED_APP_ROOT/Info.plist" ]]; then
+      printf '%s' "$STAGED_APP_ROOT"
       return 0
     fi
     if [[ -d "$LOCAL_APP_PATH" ]]; then
@@ -33,7 +38,10 @@ resolve_app_path() {
     return 0
   fi
   if [[ "$candidate" != /* ]]; then
-    candidate="$(cd "$(dirname "$candidate")" && pwd)/$(basename "$candidate")"
+  candidate="$(cd "$(dirname "$candidate")" 2>/dev/null && pwd)/$(basename "$candidate")" || candidate="$ROOT_DIR/$candidate"
+  fi
+  if [[ ! -d "$candidate" && -f "$(dirname "$candidate")/Info.plist" ]]; then
+    candidate="$(dirname "$candidate")"
   fi
   printf '%s' "$candidate"
 }
