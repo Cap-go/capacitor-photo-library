@@ -14,7 +14,7 @@ appId: app.capgo.photo.library
     visible: '.*PHASE:pick-media-cancel:opening.*'
     timeout: 120000
 - waitForAnimationToEnd:
-    timeout: 3000
+    timeout: 5000
 - pressKey: Back
 - extendedWaitUntil:
     visible: '.*Marker: pick-media-cancel:success.*'
