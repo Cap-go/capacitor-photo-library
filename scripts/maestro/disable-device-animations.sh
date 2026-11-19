@@ -111,7 +111,7 @@ restore_android_animation_settings() {
 disable_ios_simulator_animations() {
   local simulator_id="${1:-${CAPGO_MAESTRO_IOS_SIMULATOR_ID:-}}"
 
-  if [[ -z "$simulator_id" ]]; then
+  if [[ -z "$simulator_id" ]] || [[ "${CAPGO_MAESTRO_SKIP_IOS_ANIMATIONS:-}" == "1" ]]; then
     return 0
   fi
 

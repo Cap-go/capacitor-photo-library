@@ -40,26 +40,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-delete_existing_clone() {
-  local flow="$1"
-  local name="Capgo Maestro shard ${flow}"
-  local line=""
-  local sim_id=""
-  while IFS= read -r line; do
-  if [[ "$line" == *"$name"* ]]; then
-    sim_id="$(sed -nE 's/.*\(([0-9A-F-]{36})\).*/\1/p' <<<"$line" | head -n1)"
-    if [[ -n "$sim_id" ]]; then
-      xcrun simctl delete "$sim_id" >/dev/null 2>&1 || true
-    fi
-  fi
-  done < <(xcrun simctl list devices available)
-}
-
 prepare_clone() {
   local flow="$1"
   local base_id="$2"
-  local clone_name="Capgo Maestro shard ${flow}"
-  delete_existing_clone "$flow"
+  local clone_name="Capgo Maestro shard ${flow}-$$"
   xcrun simctl clone "$base_id" "$clone_name"
 }
 
@@ -73,8 +57,10 @@ run_shard() {
   CLONE_IDS+=("$sim_id")
 
   xcrun simctl boot "$sim_id" >/dev/null 2>&1 || true
-  xcrun simctl bootstatus "$sim_id" -b
-  disable_ios_simulator_animations "$sim_id"
+  if ! xcrun simctl list devices booted -j 2>/dev/null | grep -q "$sim_id"; then
+    xcrun simctl bootstatus "$sim_id" -b
+  fi
+  export CAPGO_MAESTRO_SKIP_IOS_ANIMATIONS=1
   xcrun simctl uninstall "$sim_id" "$APP_ID" >/dev/null 2>&1 || true
   xcrun simctl install "$sim_id" "$APP_PATH"
   bash "$ROOT_DIR/scripts/maestro/seed-ios-photos.sh" "$sim_id"
@@ -98,7 +84,9 @@ run_shard() {
   return 1
 }
 
+echo "Selecting base iOS simulator..."
 BASE_ID="$("$ROOT_DIR/scripts/maestro/select-ios-simulator.sh")"
+echo "Base simulator: $BASE_ID"
 xcrun simctl shutdown "$BASE_ID" >/dev/null 2>&1 || true
 
 FAILED=0
