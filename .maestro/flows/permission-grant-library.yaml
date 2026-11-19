@@ -10,13 +10,30 @@ appId: app.capgo.photo.library
       platform: iOS
 - scrollUntilVisible:
     element:
+      text: permission-grant-library
+    direction: DOWN
+    timeout: 45000
+    centerElement: true
+    when:
+      platform: iOS
+- scrollUntilVisible:
+    element:
       id: e2e-flow-permission-grant-library
     direction: DOWN
     timeout: 45000
     centerElement: true
+    when:
+      platform: Android
+- tapOn:
+    text: permission-grant-library
+    retryTapIfNoChange: true
+    when:
+      platform: iOS
 - tapOn:
     id: e2e-flow-permission-grant-library
     retryTapIfNoChange: true
+    when:
+      platform: Android
 - tapOn:
     text: 'Allow'
     optional: true

@@ -124,6 +124,9 @@ const flows = {
 
   async 'pick-media-cancel'() {
     setSummary('PHASE:pick-media-cancel:opening');
+    if (Capacitor.getPlatform() === 'android') {
+      await sleep(2500);
+    }
     let settled = false;
     const settle = (ok, detail) => {
       if (settled) {
