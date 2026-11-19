@@ -12,8 +12,6 @@ MAESTRO_TIMEOUT_SECONDS="${CAPGO_MAESTRO_TIMEOUT_SECONDS:-360}"
 MAESTRO_TEST_RETRIES="${CAPGO_MAESTRO_TEST_RETRIES:-2}"
 APP_ID="app.capgo.photo.library"
 EMULATOR_BOOT_TIMEOUT_SECONDS="${CAPGO_MAESTRO_EMULATOR_BOOT_TIMEOUT_SECONDS:-180}"
-SUITE_DEADLINE=$((SECONDS + MAESTRO_TIMEOUT_SECONDS))
-
 cleanup() {
   restore_android_animation_settings
 }
@@ -32,17 +30,13 @@ elif [[ -z "${ANDROID_SERIAL:-}" ]]; then
 fi
 
 wait_for_emulator_boot() {
-  local remaining=$((SUITE_DEADLINE - SECONDS))
-  if (( remaining < 1 )); then
-    echo "Emulator boot skipped; suite budget exhausted" >&2
-    return 1
-  fi
-  if ! timeout "${remaining}s" adb wait-for-device; then
+  local deadline=$((SECONDS + EMULATOR_BOOT_TIMEOUT_SECONDS))
+  if ! timeout "${EMULATOR_BOOT_TIMEOUT_SECONDS}s" adb wait-for-device; then
     echo "Emulator transport wait timed out" >&2
     return 1
   fi
-  while (( SECONDS < SUITE_DEADLINE )); do
-    remaining=$((SUITE_DEADLINE - SECONDS))
+  while (( SECONDS < deadline )); do
+    local remaining=$((deadline - SECONDS))
     (( remaining > 0 )) || break
     local booted
     booted="$(timeout "${remaining}s" adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
@@ -73,6 +67,7 @@ bash "$ROOT_DIR/scripts/maestro/prepare-android-permissions.sh" "$APP_ID" "$FLOW
 rm -rf "$RESULTS_DIR"
 mkdir -p "$RESULTS_DIR"
 
+SUITE_DEADLINE=$((SECONDS + MAESTRO_TIMEOUT_SECONDS))
 attempt=1
 while (( attempt <= MAESTRO_TEST_RETRIES )); do
   remaining=$((SUITE_DEADLINE - SECONDS - 10))

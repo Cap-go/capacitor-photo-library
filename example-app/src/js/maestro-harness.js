@@ -191,8 +191,7 @@ const flows = {
           throw new Error('library fetch returned no assets');
         }
         if (readPending()?.flowId === 'kill-relaunch-mid-library') {
-          clearPending();
-          setMarker('kill-relaunch-mid-library', false, 'fetch completed before interruption');
+          setSummary(`STATE:kill-relaunch-mid-library:fetched:${lib.assets.length}`);
           return;
         }
         clearPending();
@@ -226,8 +225,7 @@ const flows = {
           throw new Error('library fetch returned no assets');
         }
         if (readPending()?.flowId === 'low-memory-mid-library') {
-          clearPending();
-          setMarker('low-memory-mid-library', false, 'fetch completed before interruption');
+          setSummary(`STATE:low-memory-mid-library:fetched:${lib.assets.length}`);
           return;
         }
         clearPending();

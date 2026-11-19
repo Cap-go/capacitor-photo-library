@@ -15,7 +15,6 @@ MAESTRO_TIMEOUT_SECONDS="${CAPGO_MAESTRO_TIMEOUT_SECONDS:-300}"
 MAESTRO_TEST_RETRIES="${CAPGO_MAESTRO_TEST_RETRIES:-2}"
 LIGHT_RETRY_SLEEP_SECONDS="${CAPGO_MAESTRO_LIGHT_RETRY_SLEEP_SECONDS:-3}"
 APP_ID="app.capgo.photo.library"
-SUITE_DEADLINE=$((SECONDS + MAESTRO_TIMEOUT_SECONDS))
 LOCAL_APP_PATH="$ROOT_DIR/.maestro-ios-derived-data/Build/Products/Debug-iphonesimulator/App.app"
 STAGED_APP_PATH="$ROOT_DIR/maestro-ios-app/App.app"
 
@@ -84,6 +83,7 @@ bash "$ROOT_DIR/scripts/maestro/prepare-ios-permissions.sh" "$APP_ID" "$SIMULATO
 rm -rf "$RESULTS_DIR"
 mkdir -p "$RESULTS_DIR"
 
+SUITE_DEADLINE=$((SECONDS + MAESTRO_TIMEOUT_SECONDS))
 attempt=1
 while (( attempt <= MAESTRO_TEST_RETRIES )); do
   remaining=$((SUITE_DEADLINE - SECONDS - 10))
