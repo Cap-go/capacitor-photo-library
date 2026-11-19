@@ -13,17 +13,11 @@ android_matrix="$(
   ' "$WORKFLOW" | sort -u
 )"
 ios_shards="$(
-  awk '
-    /^  all\)$/ { capture = 1; next }
-    capture && /^\)$/ { exit }
-    capture && /^      [a-z0-9-]+$/ { gsub(/^      /, ""); print }
-    /^  a\)$/ { capture_a = 1; next }
-    capture_a && /^\)$/ { capture_a = 0; next }
-    capture_a && /^    [a-z0-9-]+$/ { gsub(/^    /, ""); print }
-    /^  b\)$/ { capture_b = 1; next }
-    capture_b && /^\)$/ { capture_b = 0; next }
-    capture_b && /^    [a-z0-9-]+$/ { gsub(/^    /, ""); print }
-  ' "${ROOT_DIR}/scripts/maestro/run-ios-parallel-shards.sh" | sort -u
+  grep -E '^[[:space:]]*FLOWS=\(' "${ROOT_DIR}/scripts/maestro/run-ios-parallel-shards.sh" \
+    | sed -E 's/.*FLOWS=\(([^)]*)\).*/\1/' \
+    | tr ' ' '\n' \
+    | grep -E '^[a-z0-9-]+$' \
+    | sort -u
 )"
 
 if [[ "$manifest" != "$android_matrix" ]]; then
