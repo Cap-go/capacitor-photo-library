@@ -6,17 +6,32 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=scripts/maestro/disable-device-animations.sh
 source "$ROOT_DIR/scripts/maestro/disable-device-animations.sh"
 
-FLOWS=(
-  permission-check
-  permission-grant-library
-  permission-denied
-  pick-media-cancel
-  kill-relaunch-mid-library
-  low-memory-mid-library
-)
+SHARD="${CAPGO_MAESTRO_IOS_SHARD:-all}"
+case "$SHARD" in
+  a)
+    FLOWS=(permission-check permission-grant-library pick-media-cancel)
+    ;;
+  b)
+    FLOWS=(permission-denied kill-relaunch-mid-library low-memory-mid-library)
+    ;;
+  all)
+    FLOWS=(
+      permission-check
+      permission-grant-library
+      permission-denied
+      pick-media-cancel
+      kill-relaunch-mid-library
+      low-memory-mid-library
+    )
+    ;;
+  *)
+    echo "Unknown iOS shard ${SHARD}" >&2
+    exit 1
+    ;;
+esac
 
 APP_PATH="${CAPGO_MAESTRO_IOS_APP_PATH:-$ROOT_DIR/maestro-ios-app/App.app}"
-MAX_PARALLEL="${CAPGO_MAESTRO_IOS_SHARD_PARALLEL:-3}"
+MAX_PARALLEL="${CAPGO_MAESTRO_IOS_SHARD_PARALLEL:-${#FLOWS[@]}}"
 MAESTRO_TIMEOUT_SECONDS="${CAPGO_MAESTRO_TIMEOUT_SECONDS:-360}"
 MAESTRO_TEST_RETRIES="${CAPGO_MAESTRO_TEST_RETRIES:-2}"
 LIGHT_RETRY_SLEEP_SECONDS="${CAPGO_MAESTRO_LIGHT_RETRY_SLEEP_SECONDS:-2}"

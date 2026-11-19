@@ -14,9 +14,9 @@ android_matrix="$(
 )"
 ios_shards="$(
   awk '
-    /^FLOWS=\(/ { capture = 1; next }
-    capture && /^\)/ { exit }
-    capture && /^  [a-z0-9-]+$/ { gsub(/^  /, ""); print }
+    /^  all\)$/ { capture = 1; next }
+    capture && /^\)$/ { exit }
+    capture && /^      [a-z0-9-]+$/ { gsub(/^      /, ""); print }
   ' "${ROOT_DIR}/scripts/maestro/run-ios-parallel-shards.sh" | sort -u
 )"
 
