@@ -277,12 +277,14 @@ jobs:
       contents: read
     needs:
       - maestro_build_ios_app
-    timeout-minutes: 10
+    # Simulator boot/seed routinely spends several minutes before Maestro starts;
+    # suite flows then need pre+post time inside a single attempt.
+    timeout-minutes: 15
     runs-on: macOS-latest
     name: Maestro E2E iOS / ${{ matrix.flow }}
     strategy:
       fail-fast: false
-      max-parallel: 6
+      max-parallel: 3
       matrix:
         flow:
           - permission-check
