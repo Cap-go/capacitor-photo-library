@@ -6,5 +6,9 @@ if [[ -z "${ANDROID_HOME:-}" ]]; then
   exit 0
 fi
 
-rm -rf "${ANDROID_HOME}/.temp" 2>/dev/null || true
-echo "Cleared Android SDK temp cache under ${ANDROID_HOME}/.temp."
+temp_dir="${ANDROID_HOME}/.temp"
+if rm -rf "$temp_dir" 2>/dev/null; then
+  echo "Cleared Android SDK temp cache under ${temp_dir}."
+else
+  echo "Warning: could not remove ${temp_dir}; continuing with existing SDK temp cache." >&2
+fi

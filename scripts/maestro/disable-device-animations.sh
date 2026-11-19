@@ -66,6 +66,28 @@ disable_android_emulator_animations() {
   done
 }
 
+restore_animation_value() {
+  local key="$1"
+  local value="$2"
+  local deadline="$3"
+  while (( SECONDS < deadline )); do
+    if [[ "$value" == "null" ]]; then
+      if run_animation_setting adb -s "$ANDROID_ANIMATION_DEVICE_ID" shell settings delete global "$key" >/dev/null; then
+        return 0
+      fi
+    elif run_animation_setting adb -s "$ANDROID_ANIMATION_DEVICE_ID" shell settings put global "$key" "$value" >/dev/null; then
+      return 0
+    fi
+    sleep 1
+  done
+  if [[ "$value" == "null" ]]; then
+    echo "Failed to restore ${key}=delete on ${ANDROID_ANIMATION_DEVICE_ID}" >&2
+  else
+    echo "Failed to restore ${key}=${value} on ${ANDROID_ANIMATION_DEVICE_ID}" >&2
+  fi
+  return 1
+}
+
 restore_android_animation_settings() {
   if [[ -z "$ANDROID_ANIMATION_DEVICE_ID" ]]; then
     return 0
@@ -74,15 +96,16 @@ restore_android_animation_settings() {
   local index=""
   local key=""
   local value=""
+  local deadline=$((SECONDS + 30))
+  local failed=0
   for index in "${!ANDROID_ANIMATION_KEYS[@]}"; do
     key="${ANDROID_ANIMATION_KEYS[$index]}"
     value="${ANDROID_ANIMATION_ORIGINAL_VALUES[$index]}"
-    if [[ "$value" == "null" ]]; then
-      run_animation_setting adb -s "$ANDROID_ANIMATION_DEVICE_ID" shell settings delete global "$key" >/dev/null || true
-    else
-      run_animation_setting adb -s "$ANDROID_ANIMATION_DEVICE_ID" shell settings put global "$key" "$value" >/dev/null || true
+    if ! restore_animation_value "$key" "$value" "$deadline"; then
+      failed=1
     fi
   done
+  return "$failed"
 }
 
 disable_ios_simulator_animations() {

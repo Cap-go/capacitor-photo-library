@@ -3,6 +3,8 @@ import { Capacitor } from '@capacitor/core';
 import { PhotoLibrary } from '@capgo/capacitor-photo-library';
 
 const storagePrefix = '__capgo_photo_maestro_';
+const VALID_AUTH_STATES = new Set(['notDetermined', 'denied', 'authorized', 'limited']);
+const harnessSessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 let activeFlowGeneration = 0;
 
 function requireElement(id) {
@@ -45,7 +47,14 @@ function sleep(ms) {
 
 function persistPending(flowId, payload) {
   localStorage.setItem(`${storagePrefix}pending_flow`, flowId);
-  localStorage.setItem(`${storagePrefix}pending_payload`, JSON.stringify(payload));
+  localStorage.setItem(
+    `${storagePrefix}pending_payload`,
+    JSON.stringify({ ...payload, sessionId: harnessSessionId }),
+  );
+}
+
+function isPermissionRejectionMessage(message) {
+  return /denied|permission|authorize|not authorized|access/i.test(message);
 }
 
 function clearPending() {
@@ -79,6 +88,10 @@ const flows = {
   async 'permission-check'() {
     const auth = await PhotoLibrary.checkAuthorization();
     setSummary(`AUTH:${auth.state}`);
+    if (!VALID_AUTH_STATES.has(auth.state)) {
+      setMarker('permission-check', false, auth.state ?? 'missing');
+      return;
+    }
     setMarker('permission-check', true, auth.state);
   },
 
@@ -118,7 +131,7 @@ const flows = {
       setMarker('permission-denied', false, 'getLibrary succeeded while denied');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      setMarker('permission-denied', true, message);
+      setMarker('permission-denied', isPermissionRejectionMessage(message), message);
     }
   },
 
@@ -178,7 +191,8 @@ const flows = {
           throw new Error('library fetch returned no assets');
         }
         if (readPending()?.flowId === 'kill-relaunch-mid-library') {
-          setSummary(`STATE:kill-relaunch-mid-library:fetched:${lib.assets.length}`);
+          clearPending();
+          setMarker('kill-relaunch-mid-library', false, 'fetch completed before interruption');
           return;
         }
         clearPending();
@@ -188,6 +202,7 @@ const flows = {
         if (generation !== activeFlowGeneration) {
           return;
         }
+        clearPending();
         setMarker('kill-relaunch-mid-library', false, String(error?.message ?? error));
       });
     await sleep(2_500);
@@ -211,7 +226,8 @@ const flows = {
           throw new Error('library fetch returned no assets');
         }
         if (readPending()?.flowId === 'low-memory-mid-library') {
-          setSummary(`STATE:low-memory-mid-library:fetched:${lib.assets.length}`);
+          clearPending();
+          setMarker('low-memory-mid-library', false, 'fetch completed before interruption');
           return;
         }
         clearPending();
@@ -221,6 +237,7 @@ const flows = {
         if (generation !== activeFlowGeneration) {
           return;
         }
+        clearPending();
         setMarker('low-memory-mid-library', false, String(error?.message ?? error));
       });
     await sleep(2_500);
@@ -232,7 +249,10 @@ async function resumePendingFlowIfNeeded() {
   if (!pending) {
     return false;
   }
-  const { flowId } = pending;
+  const { flowId, payload } = pending;
+  if (payload?.sessionId === harnessSessionId) {
+    return false;
+  }
   activeFlowGeneration += 1;
   const auth = await PhotoLibrary.checkAuthorization();
   setSummary(`AUTH:resume:${auth.state}`);
@@ -298,10 +318,5 @@ export async function initMaestroHarness() {
 
   App.addListener('appStateChange', (state) => {
     appendLog(`APP:${state.isActive ? 'active' : 'background'}`);
-    if (state.isActive) {
-      resumePendingFlowIfNeeded().catch((error) => {
-        setSummary(`APP:resume-error:${error?.message ?? error}`);
-      });
-    }
   });
 }

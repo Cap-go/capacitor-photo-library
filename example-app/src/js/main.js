@@ -28,8 +28,8 @@ async function bootstrap() {
         console.warn('Capgo notifyAppReady failed in Maestro harness', error);
       }
     }
-    const { initMaestroHarness } = await import('./maestro-harness.js');
     try {
+      const { initMaestroHarness } = await import('./maestro-harness.js');
       await initMaestroHarness();
     } catch (error) {
       reportHarnessError(error);

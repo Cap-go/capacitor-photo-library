@@ -25,6 +25,26 @@ def report_passed(report):
         return False
 
 
+def report_failed(report):
+    try:
+        root = ET.parse(report).getroot()
+        cases = list(root.iter('testcase'))
+        if not cases:
+            return False
+        if any(list(root.iter(tag)) for tag in ('failure', 'error')):
+            return True
+        return any(
+            int(suite.get('failures', '0')) > 0 or int(suite.get('errors', '0')) > 0
+            for suite in root.iter('testsuite')
+        )
+    except (OSError, ET.ParseError, ValueError):
+        return False
+
+
+def flow_summary_failed(output):
+    return bool(re.search(r'\b(\d+)/\1 Flow Failed\b', output))
+
+
 ROOT = Path(__file__).resolve().parents[2]
 FLOWS = {
     'permission-check': ROOT / '.maestro/flows/permission-check.yaml',
@@ -280,22 +300,39 @@ def read_output(selector, output):
 
 
 def monitor_process(process, selector, report, timeout, termination_signal):
-    deadline = time.monotonic() + timeout
+    flow_deadline = time.monotonic() + timeout
+    teardown_deadline = None
     passed_at = None
+    failed_at = None
     output = ''
     while process.poll() is None:
         if termination_signal():
             return 128 + termination_signal()
         output = read_output(selector, output)
         summary_passed = bool(re.search(r'\b(\d+)/\1 Flow Passed\b', output))
+        summary_failed = flow_summary_failed(output)
+        if teardown_deadline is not None:
+            if time.monotonic() >= teardown_deadline:
+                return 0 if passed_at else 1
+            continue
         if summary_passed and report_passed(report):
             passed_at = passed_at or time.monotonic()
+            failed_at = None
             if time.monotonic() - passed_at >= 2:
                 print('Maestro flow and JUnit report passed; stopping stalled CLI teardown.', flush=True)
-                return 0
+                teardown_deadline = time.monotonic() + 5
+                continue
+        elif summary_failed and report_failed(report):
+            failed_at = failed_at or time.monotonic()
+            passed_at = None
+            if time.monotonic() - failed_at >= 2:
+                print('Maestro flow and JUnit report failed; stopping stalled CLI teardown.', flush=True)
+                teardown_deadline = time.monotonic() + 2
+                continue
         else:
             passed_at = None
-        if time.monotonic() >= deadline:
+            failed_at = None
+        if time.monotonic() >= flow_deadline:
             return 124
     return process.returncode
 
