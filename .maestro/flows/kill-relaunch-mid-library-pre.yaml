@@ -8,7 +8,7 @@ appId: app.capgo.photo.library
     timeout: 45000
     centerElement: true
     when:
-      platform: iOS
+      platform: ios
 - scrollUntilVisible:
     element:
       id: e2e-flow-kill-relaunch-mid-library
@@ -16,17 +16,17 @@ appId: app.capgo.photo.library
     timeout: 45000
     centerElement: true
     when:
-      platform: Android
+      platform: android
 - tapOn:
     text: kill-relaunch-mid-library
     retryTapIfNoChange: true
     when:
-      platform: iOS
+      platform: ios
 - tapOn:
     id: e2e-flow-kill-relaunch-mid-library
     retryTapIfNoChange: true
     when:
-      platform: Android
+      platform: android
 - extendedWaitUntil:
     visible: '.*PHASE:kill-relaunch-mid-library:fetching.*'
     timeout: 90000

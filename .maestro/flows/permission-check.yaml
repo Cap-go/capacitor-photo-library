@@ -3,11 +3,11 @@ appId: app.capgo.photo.library
 - runFlow:
     file: ../helpers/launch-harness-unprivileged.yaml
     when:
-      platform: Android
+      platform: android
 - runFlow:
     file: ../helpers/launch-harness-ios-grant.yaml
     when:
-      platform: iOS
+      platform: ios
 - scrollUntilVisible:
     element:
       text: permission-check
@@ -15,7 +15,7 @@ appId: app.capgo.photo.library
     timeout: 45000
     centerElement: true
     when:
-      platform: iOS
+      platform: ios
 - scrollUntilVisible:
     element:
       id: e2e-flow-permission-check
@@ -23,17 +23,17 @@ appId: app.capgo.photo.library
     timeout: 45000
     centerElement: true
     when:
-      platform: Android
+      platform: android
 - tapOn:
     text: permission-check
     retryTapIfNoChange: true
     when:
-      platform: iOS
+      platform: ios
 - tapOn:
     id: e2e-flow-permission-check
     retryTapIfNoChange: true
     when:
-      platform: Android
+      platform: android
 - extendedWaitUntil:
     visible: '.*Marker: permission-check:success.*'
     timeout: 120000
