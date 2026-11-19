@@ -126,6 +126,8 @@ const flows = {
     setSummary('PHASE:pick-media-cancel:opening');
     if (Capacitor.getPlatform() === 'android') {
       await sleep(2500);
+    } else {
+      await sleep(500);
     }
     let settled = false;
     const settle = (ok, detail) => {
@@ -135,7 +137,11 @@ const flows = {
       settled = true;
       setMarker('pick-media-cancel', ok, detail);
     };
-    void PhotoLibrary.pickMedia({ selectionLimit: 1, includeImages: true, includeVideos: false })
+    const pickPromise = PhotoLibrary.pickMedia({
+      selectionLimit: 1,
+      includeImages: true,
+      includeVideos: false,
+    })
       .then((result) => {
         if (result.assets.length !== 0) {
           throw new Error(`expected empty pick result on cancel, got ${result.assets.length}`);
@@ -148,36 +154,14 @@ const flows = {
           /cancel/i.test(message) || /dismiss/i.test(message) || /User canceled/i.test(message);
         settle(cancelled, cancelled ? 'cancelled' : message);
       });
-    if (Capacitor.getPlatform() === 'android') {
-      let sawBackground = false;
-      const resumeHandle = await App.addListener('appStateChange', (state) => {
-        if (settled) {
-          return;
-        }
-        if (!state.isActive) {
-          sawBackground = true;
-          return;
-        }
-        if (!sawBackground) {
-          return;
-        }
-        window.setTimeout(() => {
-          if (!settled) {
-            settle(true, 'resume-after-picker');
-          }
-        }, 750);
-      });
-      const deadline = Date.now() + 120_000;
-      while (Date.now() < deadline && !settled) {
-        await sleep(250);
-      }
-      await resumeHandle.remove();
-      if (!settled) {
-        throw new Error('pick-media-cancel timed out on Android');
-      }
-      return;
+    const deadline = Date.now() + 120_000;
+    while (Date.now() < deadline && !settled) {
+      await sleep(250);
     }
-    await sleep(250);
+    if (!settled) {
+      throw new Error('pick-media-cancel timed out waiting for dismissal');
+    }
+    await pickPromise;
   },
 
   async 'kill-relaunch-mid-library'() {
