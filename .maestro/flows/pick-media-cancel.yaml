@@ -9,12 +9,11 @@ appId: app.capgo.photo.library
     centerElement: true
 - tapOn:
     id: e2e-flow-pick-media-cancel
-    retryTapIfNoChange: true
 - extendedWaitUntil:
-    visible: '.*PHASE:pick-media-cancel:opening.*'
-    timeout: 120000
+    visible: '.*EVENT:RUN:pick-media-cancel.*'
+    timeout: 30000
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 6000
 - pressKey: Back
 - extendedWaitUntil:
     visible: '.*Marker: pick-media-cancel:success.*'
