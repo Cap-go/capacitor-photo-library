@@ -7,7 +7,7 @@ appId: app.capgo.photo.library
       isE2E: true
 - extendedWaitUntil:
     visible: '.*Harness: ready.*'
-    timeout: 90000
+    timeout: 60000
 - extendedWaitUntil:
     visible: '.*Marker: low-memory-mid-library:success.*'
-    timeout: 120000
+    timeout: 90000

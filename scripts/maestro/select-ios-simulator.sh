@@ -2,8 +2,19 @@
 
 set -euo pipefail
 
-preferred_names=(
-  'Capgo Maestro iPhone'
+label="${CAPGO_MAESTRO_SIMULATOR_LABEL:-}"
+if [[ -n "$label" ]]; then
+  preferred_names=(
+    "Capgo Maestro ${label}"
+    'Capgo Maestro iPhone'
+  )
+else
+  preferred_names=(
+    'Capgo Maestro iPhone'
+  )
+fi
+
+preferred_names+=(
   'iPhone SE (3rd generation)'
   'iPhone SE (2nd generation)'
   'iPhone 16e'
@@ -93,10 +104,11 @@ create_lightweight_device() {
 
   create_error_log="$(mktemp "${TMPDIR:-/tmp}/capgo-simctl-create.XXXXXX")"
 
+  local create_name="${preferred_names[0]}"
   for device_name in "${preferred_names[@]:1}"; do
     device_type="$(device_type_identifier_for_name "$device_name")"
     if [[ -n "$device_type" ]] &&
-      simulator_id="$(xcrun simctl create "Capgo Maestro iPhone" "$device_type" "$runtime_id" 2>"$create_error_log")" &&
+      simulator_id="$(xcrun simctl create "$create_name" "$device_type" "$runtime_id" 2>"$create_error_log")" &&
       [[ -n "$simulator_id" ]]; then
       rm -f "$create_error_log"
       printf '%s\n' "$simulator_id"

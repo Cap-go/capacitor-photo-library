@@ -70,11 +70,13 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
     "$RESULTS_DIR"; then
     exit 0
   fi
-  if find "$RESULTS_DIR/debug" -type f -print0 2>/dev/null | xargs -0 grep -q 'IOSDriverTimeoutException' 2>/dev/null; then
-    xcrun simctl shutdown "$SIMULATOR_ID" >/dev/null 2>&1 || true
-    xcrun simctl boot "$SIMULATOR_ID" >/dev/null 2>&1 || true
-    xcrun simctl bootstatus "$SIMULATOR_ID" -b
+  if ! find "$RESULTS_DIR/debug" -type f -print0 2>/dev/null | xargs -0 grep -q 'IOSDriverTimeoutException' 2>/dev/null; then
+    echo "Maestro flow failed without IOSDriverTimeoutException; not retrying." >&2
+    exit 1
   fi
+  xcrun simctl shutdown "$SIMULATOR_ID" >/dev/null 2>&1 || true
+  xcrun simctl boot "$SIMULATOR_ID" >/dev/null 2>&1 || true
+  xcrun simctl bootstatus "$SIMULATOR_ID" -b
   attempt=$((attempt + 1))
   sleep "$LIGHT_RETRY_SLEEP_SECONDS"
 done
