@@ -312,6 +312,12 @@ export async function initMaestroHarness() {
 
   await resumePendingFlowIfNeeded();
 
+  const autoFlow =
+    typeof window.__capgoMaestroFlow === 'string' ? window.__capgoMaestroFlow.trim() : '';
+  if (autoFlow && Object.prototype.hasOwnProperty.call(flows, autoFlow)) {
+    await runFlow(autoFlow);
+  }
+
   App.addListener('appStateChange', (state) => {
     appendLog(`APP:${state.isActive ? 'active' : 'background'}`);
     if (state.isActive) {

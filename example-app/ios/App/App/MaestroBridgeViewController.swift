@@ -8,15 +8,38 @@ final class MaestroBridgeViewController: CAPBridgeViewController {
         }
     }
 
+    private var maestroFlowLaunchArgument: String? {
+        let arguments = ProcessInfo.processInfo.arguments
+        for (index, argument) in arguments.enumerated() {
+            if argument == "capgoMaestroFlow", index + 1 < arguments.count {
+                return arguments[index + 1]
+            }
+            if argument.hasPrefix("capgoMaestroFlow=") {
+                let value = String(argument.dropFirst("capgoMaestroFlow=".count))
+                return value.isEmpty ? nil : value
+            }
+        }
+        return nil
+    }
+
+    private func maestroHarnessJavaScript() -> String {
+        var script = "window.__capgoMaestroIsE2E=true;"
+        if let flowId = maestroFlowLaunchArgument?
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+        {
+            script += "window.__capgoMaestroFlow='\(flowId)';"
+        }
+        return script
+    }
+
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
         #if DEBUG
         guard shouldInjectMaestroFlag else {
             return
         }
-        DispatchQueue.main.async { [weak self] in
-            self?.bridge?.eval(js: "window.__capgoMaestroIsE2E=true;")
-        }
+        bridge?.eval(js: maestroHarnessJavaScript())
         #endif
     }
 }

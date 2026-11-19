@@ -95,6 +95,13 @@ mkdir -p "$RESULTS_DIR"
 
 SUITE_DEADLINE=$((SECONDS + MAESTRO_TIMEOUT_SECONDS))
 
+ios_maestro_logs_allow_retry() {
+  local results_dir="$1"
+  local pattern='IOSDriverTimeoutException|iOS driver not ready in time'
+  find "$results_dir/debug" -type f -print0 2>/dev/null \
+    | xargs -0 grep -E -q "$pattern" 2>/dev/null
+}
+
 attempt=1
 while (( attempt <= MAESTRO_TEST_RETRIES )); do
   remaining=$((SUITE_DEADLINE - SECONDS - 10))
@@ -117,23 +124,8 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
     "$RESULTS_DIR"; then
     exit 0
   fi
-  driver_timeout=false
-  if find "$RESULTS_DIR/debug" -type f -print0 2>/dev/null | xargs -0 grep -q 'IOSDriverTimeoutException' 2>/dev/null; then
-    driver_timeout=true
-  fi
-  if [[ "$driver_timeout" != true ]] && (( attempt < MAESTRO_TEST_RETRIES )); then
-    remaining=$((SUITE_DEADLINE - SECONDS - 10))
-    if (( remaining >= 120 )); then
-      echo "Maestro flow failed without driver timeout; retrying after reinstall (${attempt}/${MAESTRO_TEST_RETRIES})." >&2
-      attempt=$((attempt + 1))
-      sleep "$LIGHT_RETRY_SLEEP_SECONDS"
-      continue
-    fi
-    echo "Maestro flow failed without IOSDriverTimeoutException; insufficient budget to retry." >&2
-    exit 1
-  fi
-  if [[ "$driver_timeout" != true ]]; then
-    echo "Maestro flow failed without IOSDriverTimeoutException; not retrying." >&2
+  if ! ios_maestro_logs_allow_retry "$RESULTS_DIR"; then
+    echo "Maestro flow failed without a retryable iOS driver or boot log marker; not retrying." >&2
     exit 1
   fi
   if (( attempt < MAESTRO_TEST_RETRIES )); then
