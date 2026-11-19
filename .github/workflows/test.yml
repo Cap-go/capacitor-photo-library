@@ -258,12 +258,18 @@ jobs:
       - maestro_build_ios_app
     timeout-minutes: 10
     runs-on: macOS-latest
-    name: Maestro E2E iOS / shard-${{ matrix.shard }}
+    name: Maestro E2E iOS / ${{ matrix.flow }}
     strategy:
       fail-fast: false
       max-parallel: 2
       matrix:
-        shard: [a, b, c]
+        flow:
+          - permission-check
+          - permission-grant-library
+          - permission-denied
+          - pick-media-cancel
+          - kill-relaunch-mid-library
+          - low-memory-mid-library
     steps:
       - name: Check out
         uses: actions/checkout@v6
@@ -292,23 +298,22 @@ jobs:
             ls -laR maestro-ios-app | head -80 >&2
             exit 1
           fi
-      - name: Run iOS Maestro shards
+      - name: Run Maestro flow
         env:
           CAPGO_MAESTRO_IOS_APP_PATH: maestro-ios-app/App.app
-          CAPGO_MAESTRO_IOS_SHARD: ${{ matrix.shard }}
-          CAPGO_MAESTRO_IOS_SHARD_BUDGET_SECONDS: 540
+          CAPGO_MAESTRO_FLOW: ${{ matrix.flow }}
+          CAPGO_MAESTRO_TIMEOUT_SECONDS: 360
           CAPGO_MAESTRO_TEST_RETRIES: 2
           CAPGO_MAESTRO_LIGHT_RETRY_SLEEP_SECONDS: 2
+          CAPGO_MAESTRO_SKIP_IOS_ANIMATIONS: 1
           MAESTRO_DRIVER_STARTUP_TIMEOUT: 180000
-        run: bash ./scripts/maestro/run-ios-parallel-shards.sh
+        run: bash ./scripts/test-maestro-photo-library-ios.sh
       - name: Upload Maestro artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: maestro-results-ios-${{ matrix.shard }}
-          path: |
-            maestro-results-ios-*
-            maestro-results-ios-shard-*.log
+          name: maestro-results-ios-${{ matrix.flow }}
+          path: maestro-results-ios
 
   maestro_e2e_ios_gate:
     if: always()
@@ -325,16 +330,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           conclusions=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" --paginate \
-            --jq '[.jobs[] | select(.name | contains("Maestro E2E iOS / shard-")) | .conclusion]')
+            --jq '[.jobs[] | select(.name | contains("Maestro E2E iOS / ")) | .conclusion]')
           echo "$conclusions"
           count=$(echo "$conclusions" | jq 'length')
           success=$(echo "$conclusions" | jq '[.[] | select(. == "success")] | length')
-          if [[ "$count" -ne 3 ]]; then
-            echo "Expected 3 iOS Maestro shard jobs, found ${count}."
+          if [[ "$count" -ne 6 ]]; then
+            echo "Expected 6 iOS Maestro flow jobs, found ${count}."
             exit 1
           fi
-          if [[ "$success" -ne 3 ]]; then
-            echo "One or more iOS Maestro shards did not succeed (${success}/3 success)."
+          if [[ "$success" -ne 6 ]]; then
+            echo "One or more iOS Maestro flows did not succeed (${success}/6 success)."
             exit 1
           fi
 
