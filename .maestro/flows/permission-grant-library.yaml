@@ -1,7 +1,7 @@
 appId: app.capgo.photo.library
 ---
 - runFlow:
-    file: ../helpers/launch-harness-unprivileged.yaml
+    file: ../helpers/launch-harness.yaml
     when:
       platform: Android
 - runFlow:
@@ -10,12 +10,12 @@ appId: app.capgo.photo.library
       platform: iOS
 - scrollUntilVisible:
     element:
-      text: permission-grant-library
+      id: e2e-flow-permission-grant-library
     direction: DOWN
     timeout: 45000
     centerElement: true
 - tapOn:
-    text: permission-grant-library
+    id: e2e-flow-permission-grant-library
     retryTapIfNoChange: true
 - tapOn:
     text: 'Allow'
