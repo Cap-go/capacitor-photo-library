@@ -74,8 +74,6 @@ fi
 cd "$ROOT_DIR"
 export CAPGO_MAESTRO_IOS_SIMULATOR_ID="$SIMULATOR_ID"
 export CAPGO_MAESTRO_APP_ID="$APP_ID"
-SCRIPT_TIME0=$SECONDS
-JOB_WALL_SECONDS="${CAPGO_MAESTRO_IOS_JOB_WALL_SECONDS:-420}"
 
 if [[ "${CAPGO_MAESTRO_IOS_SKIP_DEVICE_PREP:-}" != "1" ]]; then
   booted="false"
@@ -101,15 +99,6 @@ fi
 rm -rf "$RESULTS_DIR"
 mkdir -p "$RESULTS_DIR"
 
-script_elapsed=$((SECONDS - SCRIPT_TIME0))
-wall_left=$((JOB_WALL_SECONDS - script_elapsed - 15))
-if (( wall_left < MAESTRO_TIMEOUT_SECONDS )); then
-  MAESTRO_TIMEOUT_SECONDS=$wall_left
-fi
-if (( MAESTRO_TIMEOUT_SECONDS < 120 )); then
-  echo "Insufficient Maestro budget after prep (${script_elapsed}s prep, ${wall_left}s wall left)" >&2
-  exit 1
-fi
 SUITE_DEADLINE=$((SECONDS + MAESTRO_TIMEOUT_SECONDS))
 
 ios_maestro_logs_allow_retry() {
