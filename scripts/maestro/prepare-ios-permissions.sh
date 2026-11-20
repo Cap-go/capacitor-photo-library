@@ -10,7 +10,9 @@ if [[ -z "$SIMULATOR_ID" ]]; then
   exit 1
 fi
 
-xcrun simctl privacy "$SIMULATOR_ID" reset photos "$APP_ID" >/dev/null 2>&1 || true
+if [[ "$FLOW_ID" != "permission-grant-library" ]]; then
+  xcrun simctl privacy "$SIMULATOR_ID" reset photos "$APP_ID" >/dev/null 2>&1 || true
+fi
 
 if [[ "$FLOW_ID" == "permission-denied" ]]; then
   xcrun simctl privacy "$SIMULATOR_ID" grant photos "$APP_ID" >/dev/null 2>&1 || true

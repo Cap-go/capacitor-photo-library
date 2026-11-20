@@ -18,7 +18,7 @@ appId: app.capgo.photo.library
     optional: true
 - extendedWaitUntil:
     visible: '.*(?:EVENT:RUN|RUN):permission-grant-library.*'
-    timeout: 90000
+    timeout: 60000
 - tapOn:
     text: 'Allow'
     optional: true
@@ -33,4 +33,4 @@ appId: app.capgo.photo.library
     optional: true
 - extendedWaitUntil:
     visible: '.*Marker: permission-grant-library:success.*'
-    timeout: 90000
+    timeout: 60000
