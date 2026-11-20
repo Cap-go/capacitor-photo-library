@@ -119,11 +119,10 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
   fi
   echo "Maestro iOS flow ${FLOW_ID} attempt ${attempt}/${MAESTRO_TEST_RETRIES} (${remaining}s budget)"
   if (( attempt > 1 )); then
-    xcrun simctl uninstall "$SIMULATOR_ID" "$APP_ID" >/dev/null 2>&1 || true
-    xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
-    bash "$ROOT_DIR/scripts/maestro/prepare-ios-permissions.sh" "$APP_ID" "$SIMULATOR_ID" "$FLOW_ID"
     sleep "$LIGHT_RETRY_SLEEP_SECONDS"
   fi
+  rm -rf "$RESULTS_DIR/debug"
+  rm -f "$RESULTS_DIR/junit.xml"
   if python3 "$ROOT_DIR/scripts/maestro/run-maestro.py" \
     "$remaining" \
     "$FLOW_ID" \
@@ -136,16 +135,10 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
     echo "Maestro flow failed without a retryable iOS driver or boot log marker; not retrying." >&2
     exit 1
   fi
-  if (( attempt < MAESTRO_TEST_RETRIES )); then
-    if ios_maestro_logs_allow_retry "$RESULTS_DIR"; then
-      pkill -TERM -f maestro.cli.AppKt >/dev/null 2>&1 || true
-    else
-      xcrun simctl shutdown "$SIMULATOR_ID" >/dev/null 2>&1 || true
-      xcrun simctl boot "$SIMULATOR_ID" >/dev/null 2>&1 || true
-      xcrun simctl bootstatus "$SIMULATOR_ID" -b
-      disable_ios_simulator_animations "$SIMULATOR_ID"
-    fi
+  if (( attempt >= MAESTRO_TEST_RETRIES )); then
+    break
   fi
+  pkill -TERM -f maestro.cli.AppKt >/dev/null 2>&1 || true
   attempt=$((attempt + 1))
   sleep "$LIGHT_RETRY_SLEEP_SECONDS"
 done

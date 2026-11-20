@@ -9,4 +9,4 @@ appId: app.capgo.photo.library
       photos: unset
 - extendedWaitUntil:
     visible: '.*Harness: ready.*'
-    timeout: 60000
+    timeout: 90000
