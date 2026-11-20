@@ -1,12 +1,16 @@
 appId: app.capgo.photo.library
 ---
-- runFlow:
-    file: ../helpers/launch-harness-ios-auto.yaml
-    env:
-      MAESTRO_FLOW_ID: pick-media-cancel
+- stopApp
+- launchApp:
+    clearState: true
+    arguments:
+      isE2E: pick-media-cancel
+- extendedWaitUntil:
+    visible: '.*Harness: ready.*'
+    timeout: 90000
 - extendedWaitUntil:
     visible: '.*RUN:pick-media-cancel.*'
-    timeout: 60000
+    timeout: 90000
 - waitForAnimationToEnd:
     timeout: 6000
 - tapOn:

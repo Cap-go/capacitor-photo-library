@@ -1,12 +1,18 @@
 appId: app.capgo.photo.library
 ---
-- runFlow:
-    file: ../helpers/launch-harness-ios-auto-unset.yaml
-    env:
-      MAESTRO_FLOW_ID: permission-grant-library
+- stopApp
+- launchApp:
+    clearState: true
+    arguments:
+      isE2E: permission-grant-library
+    permissions:
+      photos: unset
+- extendedWaitUntil:
+    visible: '.*Harness: ready.*'
+    timeout: 90000
 - extendedWaitUntil:
     visible: '.*RUN:permission-grant-library.*'
-    timeout: 60000
+    timeout: 90000
 - tapOn:
     text: 'Allow'
     optional: true

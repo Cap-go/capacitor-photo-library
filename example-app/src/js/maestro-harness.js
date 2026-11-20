@@ -275,7 +275,7 @@ async function resumePendingFlowIfNeeded() {
 }
 
 async function readLaunchFlowId() {
-  const deadline = Date.now() + 8_000;
+  const deadline = Date.now() + 15_000;
   while (Date.now() < deadline) {
     const flowId = globalThis.__capgoMaestroFlow;
     if (typeof flowId === 'string' && flowId.length > 0 && flows[flowId]) {
