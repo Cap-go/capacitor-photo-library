@@ -86,6 +86,16 @@ def remaining_timeout(deadline, minimum=30):
     return left
 
 
+def allocate_suite_budgets(deadline, post_reserve=150, pre_minimum=60):
+    """Reserve wall time for a suite's post phase so pre cannot consume the whole budget."""
+    remaining = max(0, deadline - time.monotonic() - 5)
+    if remaining <= pre_minimum + post_reserve:
+        post_reserve = max(90, remaining // 2)
+    pre = max(0, remaining - post_reserve)
+    post = max(0, remaining - pre)
+    return pre, post
+
+
 def prep_env(device, platform):
     env = os.environ.copy()
     if platform == 'android':
@@ -135,8 +145,8 @@ def run_kill_relaunch_suite(timeout, device, platform, results):
     app_id = 'app.capgo.photo.library'
     pre_report = results / 'kill-relaunch-mid-library-pre.xml'
     remove_report(pre_report)
-    pre_budget = remaining_timeout(deadline)
-    if not pre_budget:
+    pre_budget, post_reserve = allocate_suite_budgets(deadline)
+    if pre_budget < 60:
         return 124
     pre_status = run_command(
         build_maestro_command('kill-relaunch-mid-library-pre', device, platform, results, pre_report),
@@ -155,13 +165,17 @@ def run_kill_relaunch_suite(timeout, device, platform, results):
             return stop.returncode
     post_report = results / 'kill-relaunch-mid-library-post.xml'
     remove_report(post_report)
-    post_budget = remaining_timeout(deadline)
-    if not post_budget:
+    post_budget = remaining_timeout(deadline, minimum=90)
+    if post_budget < 90:
+        print(
+            f'Insufficient suite budget for kill-relaunch-mid-library post phase ({post_budget}s left).',
+            flush=True,
+        )
         return 124
     return run_command(
         build_maestro_command('kill-relaunch-mid-library-post', device, platform, results, post_report),
         post_report,
-        post_budget,
+        min(post_budget, post_reserve),
     )
 
 
@@ -170,8 +184,8 @@ def run_low_memory_suite(timeout, device, platform, results):
     app_id = 'app.capgo.photo.library'
     pre_report = results / 'low-memory-mid-library-pre.xml'
     remove_report(pre_report)
-    pre_budget = remaining_timeout(deadline)
-    if not pre_budget:
+    pre_budget, post_reserve = allocate_suite_budgets(deadline)
+    if pre_budget < 60:
         return 124
     pre_status = run_command(
         build_maestro_command('low-memory-mid-library-pre', device, platform, results, pre_report),
@@ -198,13 +212,17 @@ def run_low_memory_suite(timeout, device, platform, results):
             return stop.returncode
     post_report = results / 'low-memory-mid-library-post.xml'
     remove_report(post_report)
-    post_budget = remaining_timeout(deadline)
-    if not post_budget:
+    post_budget = remaining_timeout(deadline, minimum=90)
+    if post_budget < 90:
+        print(
+            f'Insufficient suite budget for low-memory-mid-library post phase ({post_budget}s left).',
+            flush=True,
+        )
         return 124
     return run_command(
         build_maestro_command('low-memory-mid-library-post', device, platform, results, post_report),
         post_report,
-        post_budget,
+        min(post_budget, post_reserve),
     )
 
 
@@ -282,6 +300,11 @@ def run_command(command, report, timeout):
         try:
             if process is not None:
                 stop_process(process)
+        except PermissionError:
+            print(
+                'Maestro CLI cleanup could not signal its process group; treating flow result as authoritative.',
+                flush=True,
+            )
         finally:
             signal.signal(signal.SIGTERM, previous_handler)
     return 128 + termination_signal if termination_signal else status
@@ -342,6 +365,11 @@ def signal_process_group(process, signum):
         os.killpg(process.pid, signum)
     except ProcessLookupError:
         pass
+    except PermissionError:
+        try:
+            process.send_signal(signum)
+        except (ProcessLookupError, PermissionError):
+            pass
 
 
 def stop_process(process):
@@ -351,8 +379,11 @@ def stop_process(process):
     except subprocess.TimeoutExpired:
         pass
     # Descendants may outlive the CLI and keep its output pipe or device session open.
-    signal_process_group(process, signal.SIGKILL)
-    process.wait()
+    try:
+        signal_process_group(process, signal.SIGKILL)
+        process.wait()
+    except PermissionError:
+        pass
     os.set_blocking(process.stdout.fileno(), False)
     remaining = process.stdout.read()
     if remaining:
