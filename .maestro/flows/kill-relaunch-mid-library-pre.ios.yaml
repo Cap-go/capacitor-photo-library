@@ -17,8 +17,4 @@ appId: app.capgo.photo.library
     timeout: 60000
 - extendedWaitUntil:
     visible: '.*PHASE:kill-relaunch-mid-library:fetching.*'
-    timeout: 60000
-- extendedWaitUntil:
-    visible: '.*STATE:kill-relaunch-mid-library:fetched:.*'
-    timeout: 90000
-    optional: true
+    timeout: 45000

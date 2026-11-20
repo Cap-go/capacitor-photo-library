@@ -165,7 +165,7 @@ def run_kill_relaunch_suite(timeout, device, platform, results):
             return stop.returncode
     post_report = results / 'kill-relaunch-mid-library-post.xml'
     remove_report(post_report)
-    post_budget = remaining_timeout(deadline, minimum=90)
+    post_budget = min(remaining_timeout(deadline, minimum=90), 200)
     if post_budget < 90:
         print(
             f'Insufficient suite budget for kill-relaunch-mid-library post phase ({post_budget}s left).',
@@ -175,7 +175,7 @@ def run_kill_relaunch_suite(timeout, device, platform, results):
     return run_command(
         build_maestro_command('kill-relaunch-mid-library-post', device, platform, results, post_report),
         post_report,
-        min(post_budget, post_reserve),
+        min(post_budget, post_reserve, 200),
     )
 
 
@@ -212,7 +212,7 @@ def run_low_memory_suite(timeout, device, platform, results):
             return stop.returncode
     post_report = results / 'low-memory-mid-library-post.xml'
     remove_report(post_report)
-    post_budget = remaining_timeout(deadline, minimum=90)
+    post_budget = min(remaining_timeout(deadline, minimum=90), 200)
     if post_budget < 90:
         print(
             f'Insufficient suite budget for low-memory-mid-library post phase ({post_budget}s left).',
@@ -222,7 +222,7 @@ def run_low_memory_suite(timeout, device, platform, results):
     return run_command(
         build_maestro_command('low-memory-mid-library-post', device, platform, results, post_report),
         post_report,
-        min(post_budget, post_reserve),
+        min(post_budget, post_reserve, 200),
     )
 
 
@@ -344,12 +344,13 @@ def monitor_process(process, selector, report, timeout, termination_signal):
                 return 0 if passed_at else 1
             continue
         if summary_passed and report_passed(report):
-            passed_at = passed_at or time.monotonic()
-            failed_at = None
-            if time.monotonic() - passed_at >= 0:
-                print('Maestro flow and JUnit report passed; stopping stalled CLI teardown.', flush=True)
-                teardown_deadline = time.monotonic() + 0.5
-                continue
+            print('Maestro flow and JUnit report passed; stopping stalled CLI teardown.', flush=True)
+            if process.poll() is None:
+                try:
+                    process.kill()
+                except OSError:
+                    pass
+            return 0
         elif summary_failed and report_failed(report):
             failed_at = failed_at or time.monotonic()
             passed_at = None
