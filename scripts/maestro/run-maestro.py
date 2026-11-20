@@ -336,14 +336,19 @@ def monitor_process(process, selector, report, timeout, termination_signal):
         summary_failed = flow_summary_failed(output)
         if teardown_deadline is not None:
             if time.monotonic() >= teardown_deadline:
+                if passed_at and process.poll() is None:
+                    try:
+                        process.kill()
+                    except OSError:
+                        pass
                 return 0 if passed_at else 1
             continue
         if summary_passed and report_passed(report):
             passed_at = passed_at or time.monotonic()
             failed_at = None
-            if time.monotonic() - passed_at >= 2:
+            if time.monotonic() - passed_at >= 1:
                 print('Maestro flow and JUnit report passed; stopping stalled CLI teardown.', flush=True)
-                teardown_deadline = time.monotonic() + 5
+                teardown_deadline = time.monotonic() + 1
                 continue
         elif summary_failed and report_failed(report):
             failed_at = failed_at or time.monotonic()
