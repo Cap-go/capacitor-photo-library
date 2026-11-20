@@ -303,6 +303,7 @@ function installFlowButtons() {
     button.type = 'button';
     button.id = `e2e-flow-${flowId}`;
     button.setAttribute('data-testid', `e2e-flow-${flowId}`);
+    button.setAttribute('aria-label', flowId);
     button.textContent = flowId;
     button.addEventListener('pointerdown', () => {
       setSummary(`EVENT:RUN:${flowId}`);

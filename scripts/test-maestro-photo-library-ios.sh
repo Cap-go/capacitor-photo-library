@@ -75,9 +75,6 @@ cd "$ROOT_DIR"
 export CAPGO_MAESTRO_IOS_SIMULATOR_ID="$SIMULATOR_ID"
 export CAPGO_MAESTRO_APP_ID="$APP_ID"
 
-# Maestro runtime budget includes device prep so CI jobs do not overrun the wall clock.
-SUITE_DEADLINE=$((SECONDS + MAESTRO_TIMEOUT_SECONDS))
-
 if [[ "${CAPGO_MAESTRO_IOS_SKIP_DEVICE_PREP:-}" != "1" ]]; then
   booted="false"
   if xcrun simctl list devices booted -j 2>/dev/null | grep -q "$SIMULATOR_ID"; then
@@ -102,9 +99,11 @@ fi
 rm -rf "$RESULTS_DIR"
 mkdir -p "$RESULTS_DIR"
 
+SUITE_DEADLINE=$((SECONDS + MAESTRO_TIMEOUT_SECONDS))
+
 ios_maestro_logs_allow_retry() {
   local results_dir="$1"
-  local pattern='IOSDriverTimeoutException|iOS driver not ready in time'
+  local pattern='IOSDriverTimeoutException|iOS driver not ready in time|xcTestDriverStatusCheck: \[Failed\]|Failed to connect to /127\.0\.0\.1:7001'
   find "$results_dir/debug" -type f -print0 2>/dev/null \
     | xargs -0 grep -E -q "$pattern" 2>/dev/null
 }

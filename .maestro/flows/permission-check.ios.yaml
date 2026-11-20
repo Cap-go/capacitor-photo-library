@@ -3,14 +3,14 @@ appId: app.capgo.photo.library
 - runFlow: ../helpers/launch-harness-ios-grant-retained.yaml
 - scrollUntilVisible:
     element:
-      id: e2e-flow-permission-check
+      text: permission-check
     direction: DOWN
     timeout: 45000
     centerElement: true
 - waitForAnimationToEnd:
     timeout: 3000
 - tapOn:
-    id: e2e-flow-permission-check
+    text: permission-check
     retryTapIfNoChange: true
 - extendedWaitUntil:
     visible: '.*(?:EVENT:RUN|RUN):permission-check.*'
