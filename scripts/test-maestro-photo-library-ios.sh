@@ -85,8 +85,10 @@ if [[ "${CAPGO_MAESTRO_IOS_SKIP_DEVICE_PREP:-}" != "1" ]]; then
     xcrun simctl bootstatus "$SIMULATOR_ID" -b
   fi
   disable_ios_simulator_animations "$SIMULATOR_ID"
-  xcrun simctl uninstall "$SIMULATOR_ID" "$APP_ID" >/dev/null 2>&1 || true
-  xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
+  if ! xcrun simctl install "$SIMULATOR_ID" "$APP_PATH" >/dev/null 2>&1; then
+    xcrun simctl uninstall "$SIMULATOR_ID" "$APP_ID" >/dev/null 2>&1 || true
+    xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
+  fi
   case "$FLOW_ID" in
     permission-check | permission-denied) ;;
     *)
