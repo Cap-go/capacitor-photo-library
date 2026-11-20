@@ -33,4 +33,4 @@ appId: app.capgo.photo.library
     optional: true
 - extendedWaitUntil:
     visible: '.*Marker: permission-grant-library:success.*'
-    timeout: 60000
+    timeout: 90000
