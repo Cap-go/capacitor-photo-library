@@ -5,7 +5,7 @@ appId: app.capgo.photo.library
     element:
       text: kill-relaunch-mid-library
     direction: DOWN
-    timeout: 45000
+    timeout: 30000
     centerElement: true
 - waitForAnimationToEnd:
     timeout: 3000
@@ -17,8 +17,8 @@ appId: app.capgo.photo.library
     timeout: 60000
 - extendedWaitUntil:
     visible: '.*PHASE:kill-relaunch-mid-library:fetching.*'
-    timeout: 90000
+    timeout: 60000
 - extendedWaitUntil:
     visible: '.*STATE:kill-relaunch-mid-library:fetched:.*'
-    timeout: 120000
+    timeout: 90000
     optional: true

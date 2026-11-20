@@ -86,7 +86,7 @@ def remaining_timeout(deadline, minimum=30):
     return left
 
 
-def allocate_suite_budgets(deadline, post_reserve=150, pre_minimum=60):
+def allocate_suite_budgets(deadline, post_reserve=110, pre_minimum=55):
     """Reserve wall time for a suite's post phase so pre cannot consume the whole budget."""
     remaining = max(0, deadline - time.monotonic() - 5)
     if remaining <= pre_minimum + post_reserve:
@@ -353,9 +353,9 @@ def monitor_process(process, selector, report, timeout, termination_signal):
         elif summary_failed and report_failed(report):
             failed_at = failed_at or time.monotonic()
             passed_at = None
-            if time.monotonic() - failed_at >= 2:
+            if time.monotonic() - failed_at >= 0.5:
                 print('Maestro flow and JUnit report failed; stopping stalled CLI teardown.', flush=True)
-                teardown_deadline = time.monotonic() + 2
+                teardown_deadline = time.monotonic() + 0.5
                 continue
         else:
             passed_at = None

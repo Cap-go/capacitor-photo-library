@@ -5,7 +5,7 @@ appId: app.capgo.photo.library
     element:
       text: low-memory-mid-library
     direction: DOWN
-    timeout: 45000
+    timeout: 30000
     centerElement: true
 - waitForAnimationToEnd:
     timeout: 3000
@@ -17,4 +17,4 @@ appId: app.capgo.photo.library
     timeout: 60000
 - extendedWaitUntil:
     visible: '.*PHASE:low-memory-mid-library:fetching.*'
-    timeout: 90000
+    timeout: 60000
