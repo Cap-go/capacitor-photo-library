@@ -274,6 +274,18 @@ async function resumePendingFlowIfNeeded() {
   return true;
 }
 
+async function readLaunchFlowId() {
+  const deadline = Date.now() + 8_000;
+  while (Date.now() < deadline) {
+    const flowId = globalThis.__capgoMaestroFlow;
+    if (typeof flowId === 'string' && flowId.length > 0 && flows[flowId]) {
+      return flowId;
+    }
+    await sleep(100);
+  }
+  return null;
+}
+
 async function runFlow(flowId) {
   setSummary(`RUN:${flowId}`);
   appendLog(`RUN:${flowId}`);
@@ -311,7 +323,15 @@ export async function initMaestroHarness() {
   harnessReady.textContent = 'Harness: ready';
   setSummary('Harness: ready');
 
-  await resumePendingFlowIfNeeded();
+  const resumed = await resumePendingFlowIfNeeded();
+  if (!resumed) {
+    const launchFlowId = await readLaunchFlowId();
+    if (launchFlowId) {
+      await runFlow(launchFlowId).catch((error) => {
+        setMarker(launchFlowId, false, String(error?.message ?? error));
+      });
+    }
+  }
 
   App.addListener('appStateChange', (state) => {
     appendLog(`APP:${state.isActive ? 'active' : 'background'}`);

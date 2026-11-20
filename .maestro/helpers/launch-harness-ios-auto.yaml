@@ -1,0 +1,11 @@
+appId: app.capgo.photo.library
+---
+- stopApp
+- launchApp:
+    clearState: true
+    arguments:
+      isE2E: true
+      capgoMaestroFlow: ${MAESTRO_FLOW_ID}
+- extendedWaitUntil:
+    visible: '.*Harness: ready.*'
+    timeout: 90000

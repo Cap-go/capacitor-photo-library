@@ -1,18 +1,12 @@
 appId: app.capgo.photo.library
 ---
-- runFlow: ../helpers/launch-harness-ios-grant.yaml
-- scrollUntilVisible:
-    element:
-      text: permission-check
-    direction: DOWN
-    timeout: 45000
-    centerElement: true
-- tapOn:
-    text: permission-check
-    retryTapIfNoChange: true
+- runFlow:
+    file: ../helpers/launch-harness-ios-auto-unset.yaml
+    env:
+      MAESTRO_FLOW_ID: permission-check
 - extendedWaitUntil:
     visible: '.*RUN:permission-check.*'
-    timeout: 45000
+    timeout: 60000
 - extendedWaitUntil:
     visible: '.*Marker: permission-check:success.*'
     timeout: 120000

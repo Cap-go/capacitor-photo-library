@@ -1,17 +1,11 @@
 appId: app.capgo.photo.library
 ---
-- runFlow: ../helpers/launch-harness.yaml
-- scrollUntilVisible:
-    element:
-      text: pick-media-cancel
-    direction: DOWN
-    timeout: 45000
-    centerElement: true
-- tapOn:
-    text: pick-media-cancel
-    retryTapIfNoChange: true
+- runFlow:
+    file: ../helpers/launch-harness-ios-auto.yaml
+    env:
+      MAESTRO_FLOW_ID: pick-media-cancel
 - extendedWaitUntil:
-    visible: '.*(?:EVENT:RUN|RUN):pick-media-cancel.*'
+    visible: '.*RUN:pick-media-cancel.*'
     timeout: 60000
 - waitForAnimationToEnd:
     timeout: 6000
