@@ -4,7 +4,9 @@ appId: app.capgo.photo.library
 - launchApp:
     clearState: true
     arguments:
-      isE2E: pick-media-cancel
+      isE2E: true
+    env:
+      CAPGO_MAESTRO_FLOW: pick-media-cancel
 - extendedWaitUntil:
     visible: '.*Harness: ready.*'
     timeout: 90000

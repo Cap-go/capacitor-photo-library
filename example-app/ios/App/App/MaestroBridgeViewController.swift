@@ -3,12 +3,20 @@ import Foundation
 
 final class MaestroBridgeViewController: CAPBridgeViewController {
     private var shouldInjectMaestroFlag: Bool {
-        ProcessInfo.processInfo.arguments.contains { argument in
+        if let envFlow = ProcessInfo.processInfo.environment["CAPGO_MAESTRO_FLOW"], !envFlow.isEmpty {
+            return true
+        }
+        return ProcessInfo.processInfo.arguments.contains { argument in
             argument == "isE2E" || argument.hasPrefix("isE2E=")
         }
     }
 
     private var maestroFlowLaunchArgument: String? {
+        if let envFlow = ProcessInfo.processInfo.environment["CAPGO_MAESTRO_FLOW"],
+           !envFlow.isEmpty
+        {
+            return envFlow
+        }
         let arguments = ProcessInfo.processInfo.arguments
         for (index, argument) in arguments.enumerated() {
             if argument == "capgoMaestroFlow", index + 1 < arguments.count {

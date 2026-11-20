@@ -4,7 +4,9 @@ appId: app.capgo.photo.library
 - launchApp:
     clearState: true
     arguments:
-      isE2E: permission-check
+      isE2E: true
+    env:
+      CAPGO_MAESTRO_FLOW: permission-check
     permissions:
       photos: unset
 - extendedWaitUntil:
