@@ -203,6 +203,13 @@ def run_low_memory_suite(timeout, device, platform, results):
     if pressure.returncode != 0:
         return pressure.returncode
     if platform == 'android':
+        subprocess.run(
+            ['adb', '-s', device, 'wait-for-device'],
+            check=False,
+            timeout=90,
+        )
+        time.sleep(3)
+    if platform == 'android':
         stop = subprocess.run(['adb', '-s', device, 'shell', 'am', 'force-stop', app_id], check=False)
         if stop.returncode != 0:
             return stop.returncode
