@@ -1,8 +1,8 @@
 name: Build source code and test it
 
 concurrency:
-  group: build-source-code-and-test-${{ github.ref }}
-  cancel-in-progress: true
+  group: build-source-code-and-test-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 on:
   push:
