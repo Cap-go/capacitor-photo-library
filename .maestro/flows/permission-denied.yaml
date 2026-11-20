@@ -4,9 +4,7 @@ appId: app.capgo.photo.library
 - launchApp:
     clearState: false
     arguments:
-      isE2E: true
-    env:
-      CAPGO_MAESTRO_FLOW: permission-denied
+      - isE2E=permission-denied
     permissions:
       all: deny
 - extendedWaitUntil:
