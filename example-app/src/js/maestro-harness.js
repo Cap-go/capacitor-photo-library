@@ -27,7 +27,7 @@ function appendLog(line) {
 
 function setSummary(text) {
   e2eSummary.textContent = text;
-  if (/^(PHASE|Marker|ASSERT|EVENT|STATE|APP|AUTH|RUN):/.test(text)) {
+  if (/^(PHASE|Marker|ASSERT|EVENT|STATE|APP|AUTH|RUN|Harness):/.test(text)) {
     harnessReady.textContent = text;
   }
   appendLog(text);

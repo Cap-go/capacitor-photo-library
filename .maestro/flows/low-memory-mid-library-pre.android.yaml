@@ -11,5 +11,8 @@ appId: app.capgo.photo.library
     id: e2e-flow-low-memory-mid-library
     retryTapIfNoChange: true
 - extendedWaitUntil:
+    visible: '.*RUN:low-memory-mid-library.*'
+    timeout: 45000
+- extendedWaitUntil:
     visible: '.*PHASE:low-memory-mid-library:fetching.*'
     timeout: 90000

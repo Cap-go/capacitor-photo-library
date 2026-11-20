@@ -10,6 +10,9 @@ appId: app.capgo.photo.library
 - tapOn:
     text: permission-grant-library
     retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: '.*RUN:permission-grant-library.*'
+    timeout: 45000
 - tapOn:
     text: 'Allow'
     optional: true
