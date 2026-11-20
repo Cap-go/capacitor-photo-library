@@ -9,9 +9,10 @@ appId: app.capgo.photo.library
     centerElement: true
 - tapOn:
     text: pick-media-cancel
+    retryTapIfNoChange: true
 - extendedWaitUntil:
-    visible: '.*EVENT:RUN:pick-media-cancel.*'
-    timeout: 30000
+    visible: '.*RUN:pick-media-cancel.*'
+    timeout: 45000
 - waitForAnimationToEnd:
     timeout: 6000
 - tapOn:
