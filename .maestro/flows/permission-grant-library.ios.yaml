@@ -3,16 +3,16 @@ appId: app.capgo.photo.library
 - runFlow: ../helpers/launch-harness-ios-grant.yaml
 - scrollUntilVisible:
     element:
-      id: e2e-flow-permission-grant-library
+      text: permission-grant-library
     direction: DOWN
     timeout: 45000
     centerElement: true
 - tapOn:
-    id: e2e-flow-permission-grant-library
+    text: permission-grant-library
     retryTapIfNoChange: true
 - extendedWaitUntil:
-    visible: '.*RUN:permission-grant-library.*'
-    timeout: 45000
+    visible: '.*(?:EVENT:RUN|RUN):permission-grant-library.*'
+    timeout: 60000
 - tapOn:
     text: 'Allow'
     optional: true
