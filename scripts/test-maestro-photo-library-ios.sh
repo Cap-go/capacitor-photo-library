@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=scripts/maestro/disable-device-animations.sh
 source "$ROOT_DIR/scripts/maestro/disable-device-animations.sh"
 
+# CAPGO_MAESTRO_FLOW selects the matrix shard flow under test.
 FLOW_ID="${CAPGO_MAESTRO_FLOW:-permission-check}"
 FLOW_PATH="$ROOT_DIR/.maestro/flows/${FLOW_ID}.ios.yaml"
 if [[ ! -f "$FLOW_PATH" ]]; then
