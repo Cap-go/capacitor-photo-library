@@ -1,14 +1,16 @@
 appId: app.capgo.photo.library
 ---
-- runFlow: ../helpers/launch-harness.yaml
+- runFlow: ../helpers/launch-harness-retained.yaml
 - scrollUntilVisible:
     element:
-      text: kill-relaunch-mid-library
+      id: e2e-flow-kill-relaunch-mid-library
     direction: DOWN
     timeout: 45000
     centerElement: true
+- waitForAnimationToEnd:
+    timeout: 3000
 - tapOn:
-    text: kill-relaunch-mid-library
+    id: e2e-flow-kill-relaunch-mid-library
     retryTapIfNoChange: true
 - extendedWaitUntil:
     visible: '.*(?:EVENT:RUN|RUN):kill-relaunch-mid-library.*'

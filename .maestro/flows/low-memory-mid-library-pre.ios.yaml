@@ -1,14 +1,16 @@
 appId: app.capgo.photo.library
 ---
-- runFlow: ../helpers/launch-harness.yaml
+- runFlow: ../helpers/launch-harness-retained.yaml
 - scrollUntilVisible:
     element:
-      text: low-memory-mid-library
+      id: e2e-flow-low-memory-mid-library
     direction: DOWN
     timeout: 45000
     centerElement: true
+- waitForAnimationToEnd:
+    timeout: 3000
 - tapOn:
-    text: low-memory-mid-library
+    id: e2e-flow-low-memory-mid-library
     retryTapIfNoChange: true
 - extendedWaitUntil:
     visible: '.*(?:EVENT:RUN|RUN):low-memory-mid-library.*'

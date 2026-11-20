@@ -136,8 +136,9 @@ const flows = {
   },
 
   async 'pick-media-cancel'() {
+    setSummary('PHASE:pick-media-cancel:arming');
+    await sleep(150);
     setSummary('PHASE:pick-media-cancel:opening');
-    await sleep(500);
     let settled = false;
     const settle = (ok, detail) => {
       if (settled) {
