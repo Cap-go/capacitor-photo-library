@@ -20,6 +20,12 @@ final class MaestroBridgeViewController: CAPBridgeViewController {
                     return value
                 }
             }
+            if argument == "isE2E", index + 1 < arguments.count {
+                let value = arguments[index + 1]
+                if !value.isEmpty && value != "true" && value != "1" && !value.hasPrefix("-") {
+                    return value
+                }
+            }
             if argument.hasPrefix("isE2E=") {
                 let value = String(argument.dropFirst("isE2E=".count))
                 if !value.isEmpty && value != "true" && value != "1" {
@@ -28,6 +34,27 @@ final class MaestroBridgeViewController: CAPBridgeViewController {
             }
         }
         return nil
+    }
+
+    private func scheduleMaestroAutoRunIfNeeded() {
+        guard let flowId = maestroFlowLaunchArgument else {
+            return
+        }
+        let escapedFlow = flowId
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+        let script = """
+        (function capgoTryAutoRunFlow(attempts) {
+          if (typeof globalThis.__capgoMaestroRunFlow === 'function') {
+            globalThis.__capgoMaestroRunFlow('\(escapedFlow)');
+            return;
+          }
+          if (attempts < 120) {
+            setTimeout(function(){ capgoTryAutoRunFlow(attempts + 1); }, 250);
+          }
+        })(0);
+        """
+        bridge?.eval(js: script)
     }
 
     private func maestroHarnessJavaScript() -> String {
@@ -49,8 +76,10 @@ final class MaestroBridgeViewController: CAPBridgeViewController {
         }
         let script = maestroHarnessJavaScript()
         bridge?.eval(js: script)
+        scheduleMaestroAutoRunIfNeeded()
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             self?.bridge?.eval(js: script)
+            self?.scheduleMaestroAutoRunIfNeeded()
         }
         #endif
     }
