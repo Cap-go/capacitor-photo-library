@@ -1,16 +1,17 @@
 appId: app.capgo.photo.library
 ---
-- stopApp
-- launchApp:
-    clearState: true
-    arguments:
-      isE2E: true
-      capgoMaestroFlow: pick-media-cancel
+- runFlow: ../helpers/launch-harness.yaml
+- scrollUntilVisible:
+    element:
+      text: pick-media-cancel
+    direction: DOWN
+    timeout: 45000
+    centerElement: true
+- tapOn:
+    text: pick-media-cancel
+    retryTapIfNoChange: true
 - extendedWaitUntil:
-    visible: '.*Harness: ready.*'
-    timeout: 90000
-- extendedWaitUntil:
-    visible: '.*RUN:pick-media-cancel.*'
+    visible: '.*(?:EVENT:RUN|RUN):pick-media-cancel.*'
     timeout: 90000
 - waitForAnimationToEnd:
     timeout: 6000

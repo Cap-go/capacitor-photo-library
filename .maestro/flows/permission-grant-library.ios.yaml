@@ -1,18 +1,17 @@
 appId: app.capgo.photo.library
 ---
-- stopApp
-- launchApp:
-    clearState: true
-    arguments:
-      isE2E: true
-      capgoMaestroFlow: permission-grant-library
-    permissions:
-      photos: unset
+- runFlow: ../helpers/launch-harness-ios-grant.yaml
+- scrollUntilVisible:
+    element:
+      text: permission-grant-library
+    direction: DOWN
+    timeout: 45000
+    centerElement: true
+- tapOn:
+    text: permission-grant-library
+    retryTapIfNoChange: true
 - extendedWaitUntil:
-    visible: '.*Harness: ready.*'
-    timeout: 90000
-- extendedWaitUntil:
-    visible: '.*RUN:permission-grant-library.*'
+    visible: '.*(?:EVENT:RUN|RUN):permission-grant-library.*'
     timeout: 90000
 - tapOn:
     text: 'Allow'
