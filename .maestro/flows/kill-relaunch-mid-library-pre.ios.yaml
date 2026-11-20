@@ -11,6 +11,9 @@ appId: app.capgo.photo.library
     text: kill-relaunch-mid-library
     retryTapIfNoChange: true
 - extendedWaitUntil:
+    visible: '.*RUN:kill-relaunch-mid-library.*'
+    timeout: 45000
+- extendedWaitUntil:
     visible: '.*PHASE:kill-relaunch-mid-library:fetching.*'
     timeout: 90000
 - extendedWaitUntil:
