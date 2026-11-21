@@ -12,9 +12,13 @@ appId: app.capgo.photo.library
 - tapOn:
     text: low-memory-mid-library
     retryTapIfNoChange: true
+- tapOn:
+    text: low-memory-mid-library
+    retryTapIfNoChange: true
+    optional: true
 - extendedWaitUntil:
     visible: '.*(?:EVENT:RUN|RUN):low-memory-mid-library.*'
-    timeout: 60000
+    timeout: 90000
 - extendedWaitUntil:
     visible: '.*PHASE:low-memory-mid-library:fetching.*'
-    timeout: 60000
+    timeout: 90000

@@ -15,9 +15,6 @@ EMULATOR_BOOT_TIMEOUT_SECONDS="${CAPGO_MAESTRO_EMULATOR_BOOT_TIMEOUT_SECONDS:-18
 
 maestro_junit_reports() {
   case "$FLOW_ID" in
-    permission-denied)
-      printf '%s\n' permission-denied-boot.xml permission-denied-assert.xml
-      ;;
     kill-relaunch-mid-library)
       printf '%s\n' kill-relaunch-mid-library-pre.xml kill-relaunch-mid-library-post.xml
       ;;
@@ -108,9 +105,15 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
   python3 "$ROOT_DIR/scripts/maestro/run-maestro.py" "$remaining" "$FLOW_ID" "$ANDROID_SERIAL"
   flow_status=$?
   set -e
-  if (( flow_status == 0 )) || maestro_reports_passed; then
+  if (( flow_status == 0 )); then
     exit 0
   fi
+  for _ in 1 2 3 4 5; do
+    if maestro_reports_passed; then
+      exit 0
+    fi
+    sleep 1
+  done
   attempt=$((attempt + 1))
   sleep 5
 done

@@ -299,15 +299,13 @@ def run(timeout, scenario, device, platform='android', results_dir=None):
             return run_low_memory_suite(timeout, device, platform, results)
         if scenario == 'kill-relaunch-mid-library':
             return run_kill_relaunch_suite(timeout, device, platform, results)
-        if platform == 'ios':
-            report = results / 'junit.xml'
-            remove_report(report)
-            return run_command(
-                build_maestro_command('permission-denied', device, platform, results, report),
-                report,
-                timeout,
-            )
-        return run_permission_denied_suite(timeout, device, platform, results)
+        report = results / 'junit.xml'
+        remove_report(report)
+        return run_command(
+            build_maestro_command('permission-denied', device, platform, results, report),
+            report,
+            timeout,
+        )
     if scenario not in FLOWS and scenario not in {
         'low-memory-mid-library',
         'kill-relaunch-mid-library',
