@@ -168,11 +168,14 @@ def run_permission_denied_suite(timeout, device, platform, results):
     assert_budget = remaining_timeout(deadline)
     if not assert_budget:
         return 124
-    return run_command(
+    assert_status = run_command(
         build_maestro_command('permission-denied-assert', device, platform, results, assert_report),
         assert_report,
         assert_budget,
     )
+    if report_passed(assert_report):
+        return 0
+    return assert_status
 
 
 def run_kill_relaunch_suite(timeout, device, platform, results):
@@ -208,11 +211,14 @@ def run_kill_relaunch_suite(timeout, device, platform, results):
             flush=True,
         )
         return 124
-    return run_command(
+    post_status = run_command(
         build_maestro_command('kill-relaunch-mid-library-post', device, platform, results, post_report),
         post_report,
         min(post_budget, post_reserve, 200),
     )
+    if report_passed(post_report):
+        return 0
+    return post_status
 
 
 def run_low_memory_suite(timeout, device, platform, results):
@@ -257,11 +263,14 @@ def run_low_memory_suite(timeout, device, platform, results):
             flush=True,
         )
         return 124
-    return run_command(
+    post_status = run_command(
         build_maestro_command('low-memory-mid-library-post', device, platform, results, post_report),
         post_report,
         min(post_budget, post_reserve, 200),
     )
+    if report_passed(post_report):
+        return 0
+    return post_status
 
 
 def build_maestro_command(scenario, device, platform, results, report):
@@ -345,7 +354,13 @@ def run_command(command, report, timeout):
             )
         finally:
             signal.signal(signal.SIGTERM, previous_handler)
-    return 128 + termination_signal if termination_signal else status
+    if termination_signal:
+        return 128 + termination_signal
+    if report_passed(report):
+        return 0
+    if report_failed(report):
+        return 1
+    return status
 
 
 def read_output(selector, output):
