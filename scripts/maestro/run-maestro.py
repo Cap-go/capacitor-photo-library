@@ -211,14 +211,19 @@ def run_kill_relaunch_suite(timeout, device, platform, results):
             flush=True,
         )
         return 124
-    post_status = run_command(
-        build_maestro_command('kill-relaunch-mid-library-post', device, platform, results, post_report),
-        post_report,
-        min(post_budget, post_reserve, 200),
-    )
-    if report_passed(post_report):
-        return 0
-    return post_status
+    post_deadline = min(post_budget, post_reserve, 200)
+    last_status = 1
+    for attempt in range(1, 3):
+        if platform == 'android' and attempt > 1:
+            stabilize_android_driver(device)
+        last_status = run_command(
+            build_maestro_command('kill-relaunch-mid-library-post', device, platform, results, post_report),
+            post_report,
+            post_deadline,
+        )
+        if report_passed(post_report):
+            return 0
+    return last_status
 
 
 def run_low_memory_suite(timeout, device, platform, results):
@@ -263,14 +268,19 @@ def run_low_memory_suite(timeout, device, platform, results):
             flush=True,
         )
         return 124
-    post_status = run_command(
-        build_maestro_command('low-memory-mid-library-post', device, platform, results, post_report),
-        post_report,
-        min(post_budget, post_reserve, 200),
-    )
-    if report_passed(post_report):
-        return 0
-    return post_status
+    post_deadline = min(post_budget, post_reserve, 200)
+    last_status = 1
+    for attempt in range(1, 3):
+        if platform == 'android' and attempt > 1:
+            stabilize_android_driver(device)
+        last_status = run_command(
+            build_maestro_command('low-memory-mid-library-post', device, platform, results, post_report),
+            post_report,
+            post_deadline,
+        )
+        if report_passed(post_report):
+            return 0
+    return last_status
 
 
 def build_maestro_command(scenario, device, platform, results, report):

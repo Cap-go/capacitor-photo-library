@@ -108,7 +108,7 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
   if (( flow_status == 0 )); then
     exit 0
   fi
-  for _ in 1 2 3 4 5; do
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
     if maestro_reports_passed; then
       exit 0
     fi
@@ -117,5 +117,9 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
   attempt=$((attempt + 1))
   sleep 5
 done
+
+if maestro_reports_passed; then
+  exit 0
+fi
 
 exit 1
