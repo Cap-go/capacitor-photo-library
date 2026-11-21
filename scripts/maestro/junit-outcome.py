@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 """Exit 0 when every given Maestro JUnit report indicates success."""
-from importlib.machinery import SourceFileLoader
 from pathlib import Path
 import sys
+import xml.etree.ElementTree as ET
 
 
-def load_run_maestro():
-    path = Path(__file__).with_name('run-maestro.py')
-    return SourceFileLoader('run_maestro', str(path)).load_module()
+def report_passed(report):
+    try:
+        root = ET.parse(report).getroot()
+        cases = list(root.iter('testcase'))
+        return bool(cases) and not any(
+            list(root.iter(tag)) for tag in ('failure', 'error', 'skipped')
+        ) and all(
+            int(suite.get('failures', '0')) == 0 and int(suite.get('errors', '0')) == 0
+            for suite in root.iter('testsuite')
+        )
+    except (OSError, ET.ParseError, ValueError):
+        return False
 
 
 def main(argv):
-    rm = load_run_maestro()
     if len(argv) < 2:
         print('Usage: junit-outcome.py <report.xml> [more reports...]', file=sys.stderr)
         return 2
@@ -21,7 +29,7 @@ def main(argv):
         print(f'Missing JUnit report(s): {", ".join(str(path) for path in miss)}', file=sys.stderr)
         return 2
     for report in reports:
-        if not rm.report_passed(report):
+        if not report_passed(report):
             return 1
     return 0
 

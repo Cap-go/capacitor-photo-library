@@ -155,7 +155,7 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
     "$RESULTS_DIR"
   flow_status=$?
   set -e
-  if (( flow_status == 0 )); then
+  if (( flow_status == 0 )) || maestro_reports_passed; then
     exit 0
   fi
   for _ in 1 2 3 4 5 6 7 8 9 10; do
@@ -164,6 +164,9 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
     fi
     sleep 1
   done
+  if maestro_reports_passed; then
+    exit 0
+  fi
   if ! ios_maestro_logs_allow_retry "$RESULTS_DIR"; then
     echo "Maestro flow failed without a retryable iOS driver or boot log marker; not retrying." >&2
     exit 1

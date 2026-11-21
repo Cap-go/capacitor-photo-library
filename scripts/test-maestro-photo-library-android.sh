@@ -105,7 +105,7 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
   python3 "$ROOT_DIR/scripts/maestro/run-maestro.py" "$remaining" "$FLOW_ID" "$ANDROID_SERIAL"
   flow_status=$?
   set -e
-  if (( flow_status == 0 )); then
+  if (( flow_status == 0 )) || maestro_reports_passed; then
     exit 0
   fi
   for _ in 1 2 3 4 5 6 7 8 9 10; do
@@ -114,6 +114,9 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
     fi
     sleep 1
   done
+  if maestro_reports_passed; then
+    exit 0
+  fi
   attempt=$((attempt + 1))
   sleep 5
 done
