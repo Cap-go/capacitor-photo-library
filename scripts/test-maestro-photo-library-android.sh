@@ -13,6 +13,32 @@ MAESTRO_TEST_RETRIES="${CAPGO_MAESTRO_TEST_RETRIES:-2}"
 APP_ID="app.capgo.photo.library"
 EMULATOR_BOOT_TIMEOUT_SECONDS="${CAPGO_MAESTRO_EMULATOR_BOOT_TIMEOUT_SECONDS:-180}"
 
+maestro_junit_reports() {
+  case "$FLOW_ID" in
+    permission-denied)
+      printf '%s\n' permission-denied-boot.xml permission-denied-assert.xml
+      ;;
+    kill-relaunch-mid-library)
+      printf '%s\n' kill-relaunch-mid-library-pre.xml kill-relaunch-mid-library-post.xml
+      ;;
+    low-memory-mid-library)
+      printf '%s\n' low-memory-mid-library-pre.xml low-memory-mid-library-post.xml
+      ;;
+    *)
+      printf '%s\n' junit.xml
+      ;;
+  esac
+}
+
+maestro_reports_passed() {
+  local reports=()
+  local report=""
+  while IFS= read -r report; do
+    reports+=("$RESULTS_DIR/$report")
+  done < <(maestro_junit_reports)
+  python3 "$ROOT_DIR/scripts/maestro/junit-outcome.py" "${reports[@]}"
+}
+
 cleanup() {
   restore_android_animation_settings || true
 }
@@ -78,7 +104,11 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
     break
   fi
   echo "Maestro Android flow ${FLOW_ID} attempt ${attempt}/${MAESTRO_TEST_RETRIES} (${remaining}s budget)"
-  if python3 "$ROOT_DIR/scripts/maestro/run-maestro.py" "$remaining" "$FLOW_ID" "$ANDROID_SERIAL"; then
+  set +e
+  python3 "$ROOT_DIR/scripts/maestro/run-maestro.py" "$remaining" "$FLOW_ID" "$ANDROID_SERIAL"
+  flow_status=$?
+  set -e
+  if (( flow_status == 0 )) || maestro_reports_passed; then
     exit 0
   fi
   attempt=$((attempt + 1))

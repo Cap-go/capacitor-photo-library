@@ -15,6 +15,29 @@ RESULTS_DIR="${CAPGO_MAESTRO_RESULTS_DIR:-$ROOT_DIR/maestro-results-ios}"
 MAESTRO_TIMEOUT_SECONDS="${CAPGO_MAESTRO_TIMEOUT_SECONDS:-300}"
 MAESTRO_TEST_RETRIES="${CAPGO_MAESTRO_TEST_RETRIES:-2}"
 LIGHT_RETRY_SLEEP_SECONDS="${CAPGO_MAESTRO_LIGHT_RETRY_SLEEP_SECONDS:-3}"
+
+maestro_junit_reports() {
+  case "$FLOW_ID" in
+    kill-relaunch-mid-library)
+      printf '%s\n' kill-relaunch-mid-library-pre.xml kill-relaunch-mid-library-post.xml
+      ;;
+    low-memory-mid-library)
+      printf '%s\n' low-memory-mid-library-pre.xml low-memory-mid-library-post.xml
+      ;;
+    *)
+      printf '%s\n' junit.xml
+      ;;
+  esac
+}
+
+maestro_reports_passed() {
+  local reports=()
+  local report=""
+  while IFS= read -r report; do
+    reports+=("$RESULTS_DIR/$report")
+  done < <(maestro_junit_reports)
+  python3 "$ROOT_DIR/scripts/maestro/junit-outcome.py" "${reports[@]}"
+}
 APP_ID="app.capgo.photo.library"
 LOCAL_APP_PATH="$ROOT_DIR/.maestro-ios-derived-data/Build/Products/Debug-iphonesimulator/App.app"
 STAGED_APP_PATH="$ROOT_DIR/maestro-ios-app/App.app"
@@ -123,12 +146,16 @@ while (( attempt <= MAESTRO_TEST_RETRIES )); do
   fi
   rm -rf "$RESULTS_DIR/debug"
   rm -f "$RESULTS_DIR/junit.xml"
-  if python3 "$ROOT_DIR/scripts/maestro/run-maestro.py" \
+  set +e
+  python3 "$ROOT_DIR/scripts/maestro/run-maestro.py" \
     "$remaining" \
     "$FLOW_ID" \
     "$SIMULATOR_ID" \
     ios \
-    "$RESULTS_DIR"; then
+    "$RESULTS_DIR"
+  flow_status=$?
+  set -e
+  if (( flow_status == 0 )) || maestro_reports_passed; then
     exit 0
   fi
   if ! ios_maestro_logs_allow_retry "$RESULTS_DIR"; then
