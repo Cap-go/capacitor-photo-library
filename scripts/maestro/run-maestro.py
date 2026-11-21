@@ -117,6 +117,11 @@ def stabilize_android_driver(device):
     if not device:
         return
     subprocess.run(
+        ['adb', '-s', device, 'reconnect'],
+        check=False,
+        timeout=30,
+    )
+    subprocess.run(
         ['adb', '-s', device, 'wait-for-device'],
         check=False,
         timeout=90,
@@ -130,7 +135,7 @@ def stabilize_android_driver(device):
             ['adb', '-s', device, 'shell', 'am', 'force-stop', package],
             check=False,
         )
-    time.sleep(4)
+    time.sleep(8)
 
 
 def run_permission_denied_suite(timeout, device, platform, results):
@@ -234,12 +239,7 @@ def run_low_memory_suite(timeout, device, platform, results):
     if pressure.returncode != 0:
         return pressure.returncode
     if platform == 'android':
-        subprocess.run(
-            ['adb', '-s', device, 'wait-for-device'],
-            check=False,
-            timeout=90,
-        )
-        time.sleep(3)
+        stabilize_android_driver(device)
     if platform == 'android':
         stop = subprocess.run(['adb', '-s', device, 'shell', 'am', 'force-stop', app_id], check=False)
         if stop.returncode != 0:
@@ -322,10 +322,6 @@ def run(timeout, scenario, device, platform='android', results_dir=None):
 def run_command(command, report, timeout):
     process = None
     termination_signal = 0
-    platform = command_flag(command, '--platform')
-    device = command_flag(command, '--udid')
-    if platform == 'android':
-        stabilize_android_driver(device)
 
     def request_termination(signum, _frame):
         nonlocal termination_signal
@@ -409,7 +405,11 @@ def monitor_process(process, selector, report, timeout, termination_signal):
             failed_at = None
         if time.monotonic() >= flow_deadline:
             return 124
-    return process.returncode
+    if report_passed(report):
+        return 0
+    if report_failed(report):
+        return 1
+    return process.returncode or 0
 
 
 def signal_process_group(process, signum):
