@@ -14,7 +14,7 @@ APP_ID="app.capgo.photo.library"
 EMULATOR_BOOT_TIMEOUT_SECONDS="${CAPGO_MAESTRO_EMULATOR_BOOT_TIMEOUT_SECONDS:-180}"
 
 cleanup() {
-  restore_android_animation_settings
+  restore_android_animation_settings || true
 }
 
 trap cleanup EXIT
