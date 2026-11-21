@@ -105,6 +105,34 @@ def prep_env(device, platform):
     return env
 
 
+def command_flag(command, flag):
+    try:
+        index = command.index(flag)
+        return command[index + 1]
+    except (ValueError, IndexError):
+        return None
+
+
+def stabilize_android_driver(device):
+    if not device:
+        return
+    subprocess.run(
+        ['adb', '-s', device, 'wait-for-device'],
+        check=False,
+        timeout=90,
+    )
+    for package in (
+        'dev.mobile.maestro',
+        'dev.mobile.maestro.test',
+        'dev.mobile.maestro.MaestroDriverService',
+    ):
+        subprocess.run(
+            ['adb', '-s', device, 'shell', 'am', 'force-stop', package],
+            check=False,
+        )
+    time.sleep(4)
+
+
 def run_permission_denied_suite(timeout, device, platform, results):
     deadline = time.monotonic() + timeout - 5
     boot_report = results / 'permission-denied-boot.xml'
@@ -119,6 +147,8 @@ def run_permission_denied_suite(timeout, device, platform, results):
     )
     if boot_status != 0:
         return boot_status
+    if platform == 'android':
+        stabilize_android_driver(device)
     app_id = 'app.capgo.photo.library'
     prep = subprocess.run(
         ['bash', str(ROOT / 'scripts/maestro/prepare-android-permissions.sh'), app_id, 'permission-denied'],
@@ -156,6 +186,7 @@ def run_kill_relaunch_suite(timeout, device, platform, results):
     if pre_status != 0:
         return pre_status
     if platform == 'android':
+        stabilize_android_driver(device)
         stop = subprocess.run(['adb', '-s', device, 'shell', 'am', 'force-stop', app_id], check=False)
         if stop.returncode != 0:
             return stop.returncode
@@ -291,6 +322,10 @@ def run(timeout, scenario, device, platform='android', results_dir=None):
 def run_command(command, report, timeout):
     process = None
     termination_signal = 0
+    platform = command_flag(command, '--platform')
+    device = command_flag(command, '--udid')
+    if platform == 'android':
+        stabilize_android_driver(device)
 
     def request_termination(signum, _frame):
         nonlocal termination_signal
@@ -353,10 +388,14 @@ def monitor_process(process, selector, report, timeout, termination_signal):
         if summary_passed and report_passed(report):
             print('Maestro flow and JUnit report passed; stopping stalled CLI teardown.', flush=True)
             if process.poll() is None:
+                stop_process(process)
                 try:
-                    process.kill()
-                except OSError:
-                    pass
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    try:
+                        process.kill()
+                    except OSError:
+                        pass
             return 0
         elif summary_failed and report_failed(report):
             failed_at = failed_at or time.monotonic()
