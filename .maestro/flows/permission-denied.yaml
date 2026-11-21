@@ -1,0 +1,27 @@
+appId: app.capgo.photo.library
+---
+- stopApp
+- launchApp:
+    clearState: false
+    arguments:
+      isE2E: true
+    permissions:
+      all: deny
+- extendedWaitUntil:
+    visible: '.*Harness: ready.*'
+    timeout: 90000
+- scrollUntilVisible:
+    element:
+      text: permission-denied
+    direction: DOWN
+    timeout: 45000
+    centerElement: true
+- tapOn:
+    text: permission-denied
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: '.*(?:EVENT:RUN|RUN):permission-denied.*'
+    timeout: 90000
+- extendedWaitUntil:
+    visible: '.*Marker: permission-denied:success.*'
+    timeout: 120000

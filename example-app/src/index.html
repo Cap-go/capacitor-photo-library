@@ -141,10 +141,29 @@
       #albumList li {
         list-style: disc;
       }
+      .hidden {
+        display: none !important;
+      }
+      #e2e-log {
+        max-height: 200px;
+        overflow: auto;
+        background: rgba(15, 23, 42, 0.7);
+        padding: 0.75rem;
+        border-radius: 10px;
+        white-space: pre-wrap;
+      }
     </style>
   </head>
   <body>
     <main>
+      <section id="maestro-panel" class="hidden">
+        <p id="harness-ready">Harness: booting</p>
+        <p id="e2e-summary">Harness: booting</p>
+        <div id="e2e-flow-buttons" class="button-row"></div>
+        <pre id="e2e-log"></pre>
+      </section>
+
+      <section id="manual-panel">
       <h1>@capgo/capacitor-photo-library Demo</h1>
       <p>
         Exercise key APIs to enumerate assets, request permissions, and preview selections. Run on device or simulator for meaningful results.
@@ -212,8 +231,9 @@
         <h2>Assets</h2>
         <div id="assetsContainer" class="assets-grid"></div>
       </section>
+      </section>
     </main>
 
-    <script src="./js/example.js" type="module"></script>
+    <script src="./js/main.js" type="module"></script>
   </body>
 </html>

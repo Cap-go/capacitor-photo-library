@@ -1,0 +1,36 @@
+appId: app.capgo.photo.library
+---
+- runFlow: ../helpers/launch-harness-ios-grant-retained.yaml
+- scrollUntilVisible:
+    element:
+      text: permission-grant-library
+    direction: DOWN
+    timeout: 45000
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    text: permission-grant-library
+    retryTapIfNoChange: true
+- tapOn:
+    text: permission-grant-library
+    retryTapIfNoChange: true
+    optional: true
+- extendedWaitUntil:
+    visible: '.*(?:EVENT:RUN|RUN):permission-grant-library.*'
+    timeout: 60000
+- tapOn:
+    text: 'Allow'
+    optional: true
+- tapOn:
+    text: 'Allow access to all photos'
+    optional: true
+- tapOn:
+    text: 'Allow Full Access'
+    optional: true
+- tapOn:
+    text: 'Allow Access to All Photos'
+    optional: true
+- extendedWaitUntil:
+    visible: '.*Marker: permission-grant-library:success.*'
+    timeout: 90000

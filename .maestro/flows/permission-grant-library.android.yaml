@@ -1,0 +1,27 @@
+appId: app.capgo.photo.library
+---
+- runFlow: ../helpers/launch-harness.yaml
+- scrollUntilVisible:
+    element:
+      id: e2e-flow-permission-grant-library
+    direction: DOWN
+    timeout: 45000
+    centerElement: true
+- tapOn:
+    id: e2e-flow-permission-grant-library
+    retryTapIfNoChange: true
+- tapOn:
+    text: 'Allow'
+    optional: true
+- tapOn:
+    text: 'Allow access to all photos'
+    optional: true
+- tapOn:
+    text: 'Allow Full Access'
+    optional: true
+- tapOn:
+    text: 'Allow Access to All Photos'
+    optional: true
+- extendedWaitUntil:
+    visible: '.*Marker: permission-grant-library:success.*'
+    timeout: 120000
