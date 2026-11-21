@@ -190,6 +190,7 @@ def run_kill_relaunch_suite(timeout, device, platform, results):
         build_maestro_command('kill-relaunch-mid-library-pre', device, platform, results, pre_report),
         pre_report,
         pre_budget,
+        fast_exit=platform != 'android',
     )
     if pre_status != 0:
         return pre_status
@@ -238,6 +239,7 @@ def run_low_memory_suite(timeout, device, platform, results):
         build_maestro_command('low-memory-mid-library-pre', device, platform, results, pre_report),
         pre_report,
         pre_budget,
+        fast_exit=platform != 'android',
     )
     if pre_status != 0:
         return pre_status
@@ -336,7 +338,7 @@ def run(timeout, scenario, device, platform='android', results_dir=None):
     return run_command(command, report, timeout)
 
 
-def run_command(command, report, timeout):
+def run_command(command, report, timeout, fast_exit=True):
     process = None
     termination_signal = 0
 
@@ -350,7 +352,14 @@ def run_command(command, report, timeout):
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
         with selectors.DefaultSelector() as selector:
             selector.register(process.stdout, selectors.EVENT_READ)
-            status = monitor_process(process, selector, report, timeout, lambda: termination_signal)
+            status = monitor_process(
+                process,
+                selector,
+                report,
+                timeout,
+                lambda: termination_signal,
+                fast_exit=fast_exit,
+            )
     finally:
         try:
             if process is not None:
@@ -383,7 +392,7 @@ def read_output(selector, output):
     return output
 
 
-def monitor_process(process, selector, report, timeout, termination_signal):
+def monitor_process(process, selector, report, timeout, termination_signal, fast_exit=True):
     flow_deadline = time.monotonic() + timeout
     teardown_deadline = None
     passed_at = None
@@ -404,7 +413,7 @@ def monitor_process(process, selector, report, timeout, termination_signal):
                         pass
                 return 0 if passed_at else 1
             continue
-        if summary_passed and report_passed(report):
+        if fast_exit and summary_passed and report_passed(report):
             print('Maestro flow and JUnit report passed; stopping stalled CLI teardown.', flush=True)
             if process.poll() is None:
                 stop_process(process)
